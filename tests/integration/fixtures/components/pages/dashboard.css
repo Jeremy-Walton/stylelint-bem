@@ -1,0 +1,26 @@
+/* non-BEM utility class — never checked */
+.sr-only {
+  position: absolute;
+}
+
+/* a page adding a modifier to a block defined in shared/button.css — the block is defined
+   in the project, so the orphan check is satisfied, but it's written flat here instead of
+   nested via "&", so requireNesting still flags it */
+.btn--jumbo {
+}
+
+/* .widget is never defined anywhere in the project */
+.widget--compact {
+}
+
+/* element part is not kebab-case */
+.card__Header {
+}
+
+/* two element levels */
+.card__header__title {
+}
+
+/* an element following a modifier */
+.card--featured__title {
+}

@@ -1,0 +1,10 @@
+/* a third-party vendor class, allowed via knownBlocks — satisfies the orphan check, but is
+   still flagged by requireNesting since it's never actually nested (there's no ".react-select"
+   rule anywhere in the project for it to nest inside — the vendor doesn't ship one) */
+.react-select__control {
+}
+
+/* a behavioral hook class matching ignoreSelectors — never checked at all, despite looking
+   BEM-shaped */
+.js-toggle--active {
+}

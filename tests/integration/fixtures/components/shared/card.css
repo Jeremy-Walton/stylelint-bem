@@ -1,0 +1,9 @@
+.card {
+  .card__header {
+    .card__title {
+    }
+  }
+
+  &.card--featured {
+  }
+}
