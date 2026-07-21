@@ -19,22 +19,22 @@ Every part (block, element, modifier) of a BEM class must be kebab-case: lowerca
 
 ## `noOrphanedElement`
 
-`.block__thing` is only valid if `.block` is defined in the same file.
+`.block__thing` is only valid if `.block` is defined somewhere in the project — the current file, or any other CSS file under the project root (the nearest directory containing a `package.json`, walking up from the linted file; `node_modules` and symlinks are never scanned). A block name listed in `knownBlocks` is always treated as defined, for classes that come from a third-party dependency and are never defined in any project CSS file.
 
 ```css
-/* invalid — .card is never defined */
+/* invalid — .card is never defined anywhere in the project */
 .card__title { }
 ```
 
 ## `noOrphanedModifier`
 
-`.block--thing` is only valid if `.block` is defined in the same file. When the modifier applies to an element instead (`.block__element--thing`), its immediate target — `.block__element` — must be defined in the same file; the root block is checked independently by `noOrphanedElement`.
+`.block--thing` is only valid if `.block` is defined somewhere in the project (see `noOrphanedElement` for what "in the project" means). When the modifier applies to an element instead (`.block__element--thing`), its immediate target — `.block__element` — must be defined somewhere in the project; the root block is checked independently by `noOrphanedElement`. As with `noOrphanedElement`, a `knownBlocks` entry for the root block satisfies both checks.
 
 ```css
-/* invalid — .card is never defined */
+/* invalid — .card is never defined anywhere in the project */
 .card--featured { }
 
-/* invalid — .card__title is never defined, even though .card is */
+/* invalid — .card__title is never defined anywhere in the project, even though .card is */
 .card { }
 .card__title--large { }
 ```

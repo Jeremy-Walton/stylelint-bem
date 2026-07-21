@@ -4,6 +4,7 @@ interface BemSharedOptions {
   elementSeparator?: string;
   modifierSeparator?: string;
   ignoreSelectors?: (string | RegExp)[];
+  knownBlocks?: string[];
 }
 
 const DEFAULT_ELEMENT_SEPARATOR = '__';
@@ -14,6 +15,10 @@ function resolveSeparatorOptions(shared?: BemSharedOptions): BemSeparatorOptions
     elementSeparator: shared?.elementSeparator ?? DEFAULT_ELEMENT_SEPARATOR,
     modifierSeparator: shared?.modifierSeparator ?? DEFAULT_MODIFIER_SEPARATOR,
   };
+}
+
+function resolveKnownBlocks(shared?: BemSharedOptions): Set<string> {
+  return new Set(shared?.knownBlocks ?? []);
 }
 
 function isIgnoredSelector(selector: string, ignoreSelectors?: (string | RegExp)[]): boolean {
@@ -36,7 +41,15 @@ const sharedOptionsSchema = {
   elementSeparator: [isString],
   modifierSeparator: [isString],
   ignoreSelectors: [isString, isRegExp],
+  knownBlocks: [isString],
 };
 
 export type { BemSharedOptions };
-export { resolveSeparatorOptions, isIgnoredSelector, isString, isRegExp, sharedOptionsSchema };
+export {
+  resolveSeparatorOptions,
+  resolveKnownBlocks,
+  isIgnoredSelector,
+  isString,
+  isRegExp,
+  sharedOptionsSchema,
+};

@@ -93,3 +93,22 @@ testRule({
     },
   ],
 });
+
+testRule({
+  plugin,
+  ruleName,
+  config: { checks: { noOrphanedModifier: false }, knownBlocks: ['card'] },
+  accept: [
+    {
+      description: 'an element of a knownBlocks entry is never flagged, even though .card is never defined',
+      code: '.card__title {}',
+    },
+  ],
+  reject: [
+    {
+      description: 'an element of a block not in knownBlocks is still flagged',
+      code: '.nav__title {}',
+      warnings: [{ message: messages.orphanedElement('nav__title', 'nav') }],
+    },
+  ],
+});

@@ -13,6 +13,7 @@ interface CheckContext {
   separatorOptions: BemSeparatorOptions;
   ignoreSelectors?: (string | RegExp)[];
   definedClassIndex: Set<string>;
+  knownBlocks: Set<string>;
   message: RuleMessage;
 }
 
@@ -35,6 +36,13 @@ function forEachBemClass(
   });
 }
 
+// A block in knownBlocks is trusted wherever it appears — as a root block, or as the
+// block an element/modifier's immediate target belongs to — for vendor/third-party
+// classes that will never be defined in any project CSS file.
+function isDefinedOrKnown(context: CheckContext, block: string, targetClassName: string): boolean {
+  return context.knownBlocks.has(block) || context.definedClassIndex.has(targetClassName);
+}
+
 function reportBemViolation(
   context: CheckContext,
   ruleNode: Rule,
@@ -53,4 +61,4 @@ function reportBemViolation(
 }
 
 export type { CheckContext };
-export { forEachBemClass, reportBemViolation };
+export { forEachBemClass, reportBemViolation, isDefinedOrKnown };

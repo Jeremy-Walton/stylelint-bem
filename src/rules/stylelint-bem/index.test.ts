@@ -1,5 +1,8 @@
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import stylelint from 'stylelint';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { testRule } from '../../test-utils/test-rule.js';
 import plugin, { messages, ruleName } from './index.js';
 
@@ -99,5 +102,78 @@ describe(ruleName, () => {
     });
 
     expect(result.results[0]!.invalidOptionWarnings.length).toBeGreaterThan(0);
+  });
+});
+
+describe(`${ruleName} — project-wide orphan scope`, () => {
+  const tmpDirs: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(tmpDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })));
+  });
+
+  async function makeProject(): Promise<string> {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'stylelint-bem-rule-'));
+    tmpDirs.push(dir);
+    await fs.writeFile(path.join(dir, 'package.json'), '{}');
+    return dir;
+  }
+
+  it('accepts an element/modifier whose block is defined in a different project file', async () => {
+    const projectRoot = await makeProject();
+    await fs.mkdir(path.join(projectRoot, 'shared'), { recursive: true });
+    await fs.writeFile(path.join(projectRoot, 'shared', 'card.css'), '.card {}');
+    const pagePath = path.join(projectRoot, 'page.css');
+    await fs.writeFile(pagePath, '.card__title {} .card--featured {}');
+
+    const result = await stylelint.lint({
+      files: [pagePath],
+      config: { plugins: [plugin], rules: { [ruleName]: true } },
+    });
+
+    expect(result.results[0]!.warnings).toEqual([]);
+  });
+
+  it('still rejects a block that is not defined anywhere in the project', async () => {
+    const projectRoot = await makeProject();
+    const pagePath = path.join(projectRoot, 'page.css');
+    await fs.writeFile(pagePath, '.ghost__title {}');
+
+    const result = await stylelint.lint({
+      files: [pagePath],
+      config: { plugins: [plugin], rules: { [ruleName]: true } },
+    });
+
+    expect(result.results[0]!.warnings).toHaveLength(1);
+    expect(result.results[0]!.warnings[0]!.text).toContain(
+      messages.orphanedElement('ghost__title', 'ghost'),
+    );
+  });
+
+  it('uses the linted file\'s in-memory content, not a stale on-disk copy, for its own classes', async () => {
+    const projectRoot = await makeProject();
+    await fs.mkdir(path.join(projectRoot, 'shared'), { recursive: true });
+    await fs.writeFile(path.join(projectRoot, 'shared', 'card.css'), '.card {}');
+    const pagePath = path.join(projectRoot, 'page.css');
+    // page.css is never written to disk — codeFilename only attributes the in-memory
+    // code to that path, proving project-wide scanning doesn't require re-reading the
+    // file currently being linted from disk.
+
+    const result = await stylelint.lint({
+      code: '.card__title {}',
+      codeFilename: pagePath,
+      config: { plugins: [plugin], rules: { [ruleName]: true } },
+    });
+
+    expect(result.results[0]!.warnings).toEqual([]);
+  });
+
+  it('falls back to same-file-only behavior when there is no file path (a raw code string)', async () => {
+    const result = await stylelint.lint({
+      code: '.card__title {}',
+      config: { plugins: [plugin], rules: { [ruleName]: true } },
+    });
+
+    expect(result.results[0]!.warnings).toHaveLength(1);
   });
 });

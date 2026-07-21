@@ -1,6 +1,6 @@
 import type { Root } from 'postcss';
 import { formatClassName } from '../../../utils/bem-parser.js';
-import { forEachBemClass, reportBemViolation } from '../check-context.js';
+import { forEachBemClass, isDefinedOrKnown, reportBemViolation } from '../check-context.js';
 import type { CheckContext } from '../check-context.js';
 
 function checkNoOrphanedModifier(root: Root, context: CheckContext): void {
@@ -14,7 +14,7 @@ function checkNoOrphanedModifier(root: Root, context: CheckContext): void {
       context.separatorOptions,
     );
 
-    if (context.definedClassIndex.has(target)) return;
+    if (isDefinedOrKnown(context, parsed.block, target)) return;
 
     reportBemViolation(context, ruleNode, classNode, classNode.name, target);
   });

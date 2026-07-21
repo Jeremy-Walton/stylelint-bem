@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isIgnoredSelector, resolveSeparatorOptions } from './rule-options.js';
+import { isIgnoredSelector, resolveKnownBlocks, resolveSeparatorOptions } from './rule-options.js';
 
 describe('resolveSeparatorOptions', () => {
   it('falls back to defaults when no secondary options are given', () => {
@@ -23,6 +23,16 @@ describe('resolveSeparatorOptions', () => {
       elementSeparator: '-',
       modifierSeparator: '~~',
     });
+  });
+});
+
+describe('resolveKnownBlocks', () => {
+  it('returns an empty set when no known blocks are given', () => {
+    expect(resolveKnownBlocks(undefined)).toEqual(new Set());
+  });
+
+  it('returns the configured block names as a set', () => {
+    expect(resolveKnownBlocks({ knownBlocks: ['card', 'nav'] })).toEqual(new Set(['card', 'nav']));
   });
 });
 

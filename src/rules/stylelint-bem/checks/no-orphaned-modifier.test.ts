@@ -86,3 +86,27 @@ testRule({
     },
   ],
 });
+
+testRule({
+  plugin,
+  ruleName,
+  config: { checks: { noOrphanedElement: false }, knownBlocks: ['card'] },
+  accept: [
+    {
+      description: 'a modifier of a knownBlocks entry is never flagged, even though .card is never defined',
+      code: '.card--featured {}',
+    },
+    {
+      description:
+        "an element-modifier's root block being in knownBlocks also satisfies the check, even though the element itself is never defined",
+      code: '.card__title--large {}',
+    },
+  ],
+  reject: [
+    {
+      description: 'a modifier of a block not in knownBlocks is still flagged',
+      code: '.nav--featured {}',
+      warnings: [{ message: messages.orphanedModifier('nav--featured', 'nav') }],
+    },
+  ],
+});

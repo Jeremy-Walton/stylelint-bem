@@ -1,7 +1,12 @@
 import stylelint from 'stylelint';
 import type { Root } from 'postcss';
 import { buildDefinedClassIndex } from '../../utils/block-index.js';
-import { resolveSeparatorOptions, sharedOptionsSchema } from '../../utils/rule-options.js';
+import { scanProjectDefinedClassesForFile } from '../../utils/project-scan.js';
+import {
+  resolveKnownBlocks,
+  resolveSeparatorOptions,
+  sharedOptionsSchema,
+} from '../../utils/rule-options.js';
 import type { BemSharedOptions } from '../../utils/rule-options.js';
 import type { CheckContext } from './check-context.js';
 import { checkNoOrphanedElement } from './checks/no-orphaned-element.js';
@@ -44,7 +49,7 @@ function isChecksOption(value: unknown): boolean {
 }
 
 const rule: stylelint.Rule<true | StylelintBemOptions> = (primary) => {
-  return (root, result) => {
+  return async (root, result) => {
     const validPrimary = stylelint.utils.validateOptions(result, ruleName, {
       actual: primary,
       possible: [(value: unknown) => value === true || isPlainObject(value)],
@@ -62,12 +67,15 @@ const rule: stylelint.Rule<true | StylelintBemOptions> = (primary) => {
 
     if (!validOptions) return;
 
+    const projectClasses = await scanProjectDefinedClassesForFile(root);
+
     const context = {
       ruleName,
       result,
       separatorOptions: resolveSeparatorOptions(options),
       ignoreSelectors: options?.ignoreSelectors,
-      definedClassIndex: buildDefinedClassIndex(root),
+      knownBlocks: resolveKnownBlocks(options),
+      definedClassIndex: new Set([...projectClasses, ...buildDefinedClassIndex(root)]),
     };
 
     const checks = options?.checks ?? {};
