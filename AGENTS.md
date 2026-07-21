@@ -12,7 +12,7 @@ A stylelint plugin (npm package `stylelint-bem`) that validates BEM methodology 
 
 ## Key decisions
 
-- A single rule, `plugin/stylelint-bem`; individual checks toggle via its `checks` option (all default `true` — opt-out, not opt-in). Check list and semantics: see `CHECKS.md`; usage/options: see `README.md`.
+- Five rules, one per check, namespaced `stylelint-bem/<check-name>` (e.g. `stylelint-bem/valid-name`) — each independently enabled/disabled/configured, not a single mega-rule with a `checks` option. Standard stylelint two-arg config shape (primary option + secondary options object) per rule. Check list and semantics: see `CHECKS.md`; usage/options: see `README.md`.
 - Orphan checks look project-wide, not just the current file (see `CHECKS.md`); a `knownBlocks` option covers third-party classes that will never be defined in project CSS. No autofix — report only.
 - Ships a recommended shareable config.
 

@@ -31,15 +31,15 @@ Technology choices, as decided.
 ## Distribution
 
 - npm package **`stylelint-bem`**, public.
-- A **single** rule, namespaced **`plugin/stylelint-bem`** — not one rule per check (revised 2026-07-21; see `CHECKS.md`).
-- Ships a **recommended shareable config** that enables the rule with all checks on.
+- **Five** rules, one per check, namespaced **`stylelint-bem/<check-name>`** — not a single mega-rule with a `checks` option (revised 2026-07-21, second revision same day — see `CHECKS.md`). Each rule uses the standard stylelint two-arg config shape (primary option + secondary options object).
+- Ships a **recommended shareable config** that enables all five rules with their defaults.
 
 ## Plugin architecture
 
-- `src/index.ts` — plugin entry exporting the one rule.
-- `src/rules/stylelint-bem/index.ts` — the rule: option validation/resolution and dispatch to checks.
-- `src/rules/stylelint-bem/checks/<check-name>.ts` — one file per check, invoked by the rule based on the `checks` option.
+- `src/index.ts` — plugin entry exporting all five rules.
+- `src/rules/<check-name>/index.ts` — one directory per rule (`valid-name`, `no-orphaned-element`, `no-orphaned-modifier`, `no-double-nested-element`, `require-nesting`): option validation/resolution and check logic together, since each rule is exactly one check now.
+- `src/rules/shared/rule-context.ts` — shared helpers (`forEachBemClass`, `reportBemViolation`, `isDefinedOrKnown`) and the `RuleContext` type, reused by all five rules.
 - `src/utils/` — shared BEM name parser, selector walker, per-file block/defined-class index, project-wide file scan.
 - `src/configs/recommended.ts` — shareable config.
-- Rule options: `elementSeparator` (default `__`), `modifierSeparator` (default `--`), `ignoreSelectors`, `knownBlocks`, `checks` (per-check on/off, all default `true`).
-- No autofix — the rule reports only.
+- Secondary options, all five rules: `elementSeparator` (default `__`), `modifierSeparator` (default `--`), `ignoreSelectors`. `knownBlocks` additionally on the two orphan rules. `require-nesting`'s primary option carries its `strict`/`weak` mode instead of a boolean.
+- No autofix — rules report only.

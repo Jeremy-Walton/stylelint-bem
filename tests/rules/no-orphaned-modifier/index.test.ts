@@ -1,10 +1,15 @@
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import stylelint from 'stylelint';
+import { afterEach, describe, expect, it } from 'vitest';
 import { testRule } from '@tests/test-utils/test-rule.js';
-import plugin, { messages, ruleName } from '@src/rules/stylelint-bem/index.js';
+import plugin, { messages, ruleName } from '@src/rules/no-orphaned-modifier/index.js';
 
 testRule({
   plugin,
   ruleName,
-  config: { checks: { noOrphanedElement: false, noDoubleNestedElement: false, requireNesting: false } },
+  config: true,
   accept: [
     {
       description: 'block and modifier defined as separate top-level rules',
@@ -59,10 +64,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: {
-    checks: { noOrphanedElement: false, requireNesting: false },
-    ignoreSelectors: ['.foo--bar'],
-  },
+  config: [true, { ignoreSelectors: ['.foo--bar'] }],
   accept: [
     {
       description: 'orphaned modifier matching an ignored selector is not flagged',
@@ -74,7 +76,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: { checks: { noOrphanedElement: false, requireNesting: false }, modifierSeparator: '_' },
+  config: [true, { modifierSeparator: '_' }],
   accept: [
     {
       description: 'block and modifier defined using a custom modifier separator',
@@ -93,7 +95,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: { checks: { noOrphanedElement: false, requireNesting: false }, knownBlocks: ['card'] },
+  config: [true, { knownBlocks: ['card'] }],
   accept: [
     {
       description: 'a modifier of a knownBlocks entry is never flagged, even though .card is never defined',
@@ -112,4 +114,50 @@ testRule({
       warnings: [{ message: messages.orphanedModifier('nav--featured', 'nav') }],
     },
   ],
+});
+
+describe(`${ruleName} — project-wide orphan scope`, () => {
+  const tmpDirs: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(tmpDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })));
+  });
+
+  async function makeProject(): Promise<string> {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'stylelint-bem-rule-'));
+    tmpDirs.push(dir);
+    await fs.writeFile(path.join(dir, 'package.json'), '{}');
+    return dir;
+  }
+
+  it('accepts a modifier whose block is defined in a different project file', async () => {
+    const projectRoot = await makeProject();
+    await fs.mkdir(path.join(projectRoot, 'shared'), { recursive: true });
+    await fs.writeFile(path.join(projectRoot, 'shared', 'card.css'), '.card {}');
+    const pagePath = path.join(projectRoot, 'page.css');
+    await fs.writeFile(pagePath, '.card--featured {}');
+
+    const result = await stylelint.lint({
+      files: [pagePath],
+      config: { plugins: [plugin], rules: { [ruleName]: true } },
+    });
+
+    expect(result.results[0]!.warnings).toEqual([]);
+  });
+
+  it('still rejects a block that is not defined anywhere in the project', async () => {
+    const projectRoot = await makeProject();
+    const pagePath = path.join(projectRoot, 'page.css');
+    await fs.writeFile(pagePath, '.ghost--featured {}');
+
+    const result = await stylelint.lint({
+      files: [pagePath],
+      config: { plugins: [plugin], rules: { [ruleName]: true } },
+    });
+
+    expect(result.results[0]!.warnings).toHaveLength(1);
+    expect(result.results[0]!.warnings[0]!.text).toContain(
+      messages.orphanedModifier('ghost--featured', 'ghost'),
+    );
+  });
 });

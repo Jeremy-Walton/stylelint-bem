@@ -1,10 +1,10 @@
 import { testRule } from '@tests/test-utils/test-rule.js';
-import plugin, { messages, ruleName } from '@src/rules/stylelint-bem/index.js';
+import plugin, { messages, ruleName } from '@src/rules/valid-name/index.js';
 
 testRule({
   plugin,
   ruleName,
-  config: { checks: { noOrphanedElement: false, noOrphanedModifier: false, requireNesting: false } },
+  config: true,
   accept: [
     {
       description: 'kebab-case block, element, and modifier',
@@ -41,10 +41,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: {
-    checks: { noOrphanedElement: false, noOrphanedModifier: false, requireNesting: false },
-    elementSeparator: '-',
-  },
+  config: [true, { elementSeparator: '-' }],
   accept: [
     {
       description: 'kebab-case parts using a custom element separator',

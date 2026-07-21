@@ -2,9 +2,9 @@
 
 Central list of checks this plugin runs, and their semantics. Other documents should link here rather than duplicating check details. For how to install, enable, and configure the plugin (options, toggling checks, presets), see `README.md`.
 
-**Shared grammar:** valid block, element, and modifier names are kebab-case (lowercase letters/digits separated by single dashes). Dashes within a part name are normal; only the configured separators carry structural meaning. A class using BEM separators with a non-kebab-case part is invalid BEM and is flagged by the `validName` check. Methodology background: `docs/bem.md`.
+**Shared grammar:** valid block, element, and modifier names are kebab-case (lowercase letters/digits separated by single dashes). Dashes within a part name are normal; only the configured separators carry structural meaning. A class using BEM separators with a non-kebab-case part is invalid BEM and is flagged by the `stylelint-bem/valid-name` rule. Methodology background: `docs/bem.md`.
 
-## `validName`
+## `stylelint-bem/valid-name`
 
 Every part (block, element, modifier) of a BEM class must be kebab-case: lowercase letters/digits separated by single dashes.
 
@@ -17,7 +17,7 @@ Every part (block, element, modifier) of a BEM class must be kebab-case: lowerca
 .my-block--active { }
 ```
 
-## `noOrphanedElement`
+## `stylelint-bem/no-orphaned-element`
 
 `.block__thing` is only valid if `.block` is defined somewhere in the project — the current file, or any other `.css`/`.scss` file under the project root (the nearest directory containing a `package.json`, walking up from the linted file; `node_modules` and symlinks are never scanned). If no `package.json` is found anywhere above the linted file, the check falls back to same-file-only (it never errors, and never scans from some other guessed root). A block name listed in `knownBlocks` is always treated as defined, for classes that come from a third-party dependency and are never defined in any project CSS/SCSS file.
 
@@ -26,7 +26,7 @@ Every part (block, element, modifier) of a BEM class must be kebab-case: lowerca
 .card__title { }
 ```
 
-## `noOrphanedModifier`
+## `stylelint-bem/no-orphaned-modifier`
 
 `.block--thing` is only valid if `.block` is defined somewhere in the project (see `noOrphanedElement` for what "in the project" means). When the modifier applies to an element instead (`.block__element--thing`), its immediate target — `.block__element` — must be defined somewhere in the project; the root block is checked independently by `noOrphanedElement`. As with `noOrphanedElement`, a `knownBlocks` entry for the root block satisfies both checks.
 
@@ -39,7 +39,7 @@ Every part (block, element, modifier) of a BEM class must be kebab-case: lowerca
 .card__title--large { }
 ```
 
-## `noDoubleNestedElement`
+## `stylelint-bem/no-double-nested-element`
 
 BEM has one element level. `.block__element__other` is invalid — flatten to `.block__other`. Elements on modifiers (`.block--mod__el`) are also invalid, since a modifier cannot be followed by an element. Modifiers on elements (`.block__el--mod`) are valid.
 
@@ -52,7 +52,7 @@ BEM has one element level. `.block__element__other` is invalid — flatten to `.
 .card__title--large { }
 ```
 
-## `requireNesting`
+## `stylelint-bem/require-nesting`
 
 Elements and modifiers must be defined inside their block's rule via native CSS nesting, so they can't apply outside their intended block.
 
@@ -76,9 +76,9 @@ Elements and modifiers must be defined inside their block's rule via native CSS 
 .card__title { }
 ```
 
-### Strictness: `strict` / `weak` / `false`
+### Strictness: `strict` / `weak`
 
-Unlike the other checks, `requireNesting` takes more than a boolean — `checks.requireNesting` accepts `true` (equivalent to `"strict"`), `"strict"`, `"weak"`, or `false`.
+Unlike the other rules, `stylelint-bem/require-nesting`'s primary option takes more than a boolean — it accepts `true` (equivalent to `"strict"`), `"strict"`, or `"weak"`. (To disable the rule entirely, omit it from your config or set it to `false` at the top level, same as any stylelint rule.)
 
 By construction, `requireNesting` can only ever validate nesting within the *current file's* AST — it has no way to confirm nesting against a block defined in a different file, even though that block is a legitimate, fully-defined part of the project (see `noOrphanedElement`). This makes **`strict`** mode (the default) incompatible with a common, legitimate pattern: a shared component's block lives in one file, and a page/feature file customizes it with a modifier or element written flat, without re-declaring the block's nesting:
 
@@ -96,8 +96,6 @@ Under `strict`, `.btn--jumbo` is flagged (`.btn` isn't nested in *this* file, so
 
 ```json
 {
-  "plugin/stylelint-bem": {
-    "checks": { "requireNesting": "weak" }
-  }
+  "stylelint-bem/require-nesting": "weak"
 }
 ```

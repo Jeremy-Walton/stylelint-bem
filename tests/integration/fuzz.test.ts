@@ -1,11 +1,11 @@
 import stylelint from 'stylelint';
 import { describe, expect, it } from 'vitest';
-import plugin, { ruleName } from '@src/rules/stylelint-bem/index.js';
+import recommended from '@src/configs/recommended.js';
 
 async function lint(code: string) {
   const result = await stylelint.lint({
     code,
-    config: { plugins: [plugin], rules: { [ruleName]: true } },
+    config: recommended,
   });
 
   return result.results[0]!.warnings;

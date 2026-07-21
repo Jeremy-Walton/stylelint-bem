@@ -1,17 +1,12 @@
+import stylelint from 'stylelint';
+import { describe, expect, it } from 'vitest';
 import { testRule } from '@tests/test-utils/test-rule.js';
-import plugin, { messages, ruleName } from '@src/rules/stylelint-bem/index.js';
-
-const isolate = {
-  noOrphanedElement: false,
-  noOrphanedModifier: false,
-  validName: false,
-  noDoubleNestedElement: false,
-};
+import plugin, { messages, ruleName } from '@src/rules/require-nesting/index.js';
 
 testRule({
   plugin,
   ruleName,
-  config: { checks: isolate },
+  config: true,
   accept: [
     {
       description: 'element nested directly inside its block',
@@ -112,7 +107,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: { checks: isolate, ignoreSelectors: ['.foo--bar'] },
+  config: [true, { ignoreSelectors: ['.foo--bar'] }],
   accept: [
     {
       description: 'a top-level selector matching ignoreSelectors is never checked',
@@ -124,7 +119,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: { checks: { ...isolate, requireNesting: 'strict' } },
+  config: 'strict',
   reject: [
     {
       description: 'the string "strict" behaves identically to the default/true',
@@ -137,19 +132,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: { checks: { ...isolate, requireNesting: false } },
-  accept: [
-    {
-      description: 'false disables the check entirely, even for badly-shaped top-level classes',
-      code: '.card__title {} .card--featured {} .card__header__title {}',
-    },
-  ],
-});
-
-testRule({
-  plugin,
-  ruleName,
-  config: { checks: { ...isolate, requireNesting: 'weak' } },
+  config: 'weak',
   accept: [
     {
       description: 'weak allows a modifier written flat, with no ancestor at all',
@@ -195,7 +178,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: { checks: isolate, elementSeparator: '-', modifierSeparator: '_' },
+  config: [true, { elementSeparator: '-', modifierSeparator: '_' }],
   accept: [
     {
       description: 'element nested directly inside its block, using custom separators',
@@ -218,4 +201,24 @@ testRule({
       warnings: [{ message: messages.modifierNotCompound('card_featured') }],
     },
   ],
+});
+
+describe(ruleName, () => {
+  it('rejects an unrecognized mode string', async () => {
+    const result = await stylelint.lint({
+      code: '.card {}',
+      config: { plugins: [plugin], rules: { [ruleName]: 'bogus' } },
+    });
+
+    expect(result.results[0]!.invalidOptionWarnings.length).toBeGreaterThan(0);
+  });
+
+  it('rejects a non-boolean, non-string primary value', async () => {
+    const result = await stylelint.lint({
+      code: '.card {}',
+      config: { plugins: [plugin], rules: { [ruleName]: 1 } },
+    });
+
+    expect(result.results[0]!.invalidOptionWarnings.length).toBeGreaterThan(0);
+  });
 });

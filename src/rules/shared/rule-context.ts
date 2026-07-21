@@ -7,22 +7,19 @@ import { isIgnoredSelector } from '../../utils/rule-options.js';
 import { getClassNodes } from '../../utils/selector-walker.js';
 import type { ClassNode } from '../../utils/selector-walker.js';
 
-type RequireNestingMode = 'strict' | 'weak';
-
-interface CheckContext {
+interface RuleContext {
   ruleName: string;
   result: PostcssResult;
   separatorOptions: BemSeparatorOptions;
   ignoreSelectors?: (string | RegExp)[];
-  definedClassIndex: Set<string>;
-  knownBlocks: Set<string>;
-  requireNestingMode: RequireNestingMode;
+  definedClassIndex?: Set<string>;
+  knownBlocks?: Set<string>;
   messages: Record<string, RuleMessage>;
 }
 
 function forEachBemClass(
   root: Root,
-  context: CheckContext,
+  context: RuleContext,
   visit: (ruleNode: Rule, classNode: ClassNode, parsed: ParsedBemClassName) => void,
 ): void {
   root.walkRules((ruleNode) => {
@@ -42,12 +39,15 @@ function forEachBemClass(
 // A block in knownBlocks is trusted wherever it appears — as a root block, or as the
 // block an element/modifier's immediate target belongs to — for vendor/third-party
 // classes that will never be defined in any project CSS file.
-function isDefinedOrKnown(context: CheckContext, block: string, targetClassName: string): boolean {
-  return context.knownBlocks.has(block) || context.definedClassIndex.has(targetClassName);
+function isDefinedOrKnown(context: RuleContext, block: string, targetClassName: string): boolean {
+  return (
+    (context.knownBlocks?.has(block) ?? false) ||
+    (context.definedClassIndex?.has(targetClassName) ?? false)
+  );
 }
 
 function reportBemViolation(
-  context: CheckContext,
+  context: RuleContext,
   ruleNode: Rule,
   classNode: ClassNode,
   message: RuleMessage,
@@ -64,5 +64,5 @@ function reportBemViolation(
   });
 }
 
-export type { CheckContext, RequireNestingMode };
+export type { RuleContext };
 export { forEachBemClass, reportBemViolation, isDefinedOrKnown };

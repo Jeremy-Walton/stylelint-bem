@@ -1,12 +1,10 @@
 import { testRule } from '@tests/test-utils/test-rule.js';
-import plugin, { messages, ruleName } from '@src/rules/stylelint-bem/index.js';
+import plugin, { messages, ruleName } from '@src/rules/no-double-nested-element/index.js';
 
 testRule({
   plugin,
   ruleName,
-  config: {
-    checks: { noOrphanedElement: false, noOrphanedModifier: false, validName: false, requireNesting: false },
-  },
+  config: true,
   accept: [
     {
       description: 'a single element level',
@@ -50,11 +48,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: {
-    checks: { noOrphanedElement: false, noOrphanedModifier: false, requireNesting: false },
-    elementSeparator: '-',
-    modifierSeparator: '_',
-  },
+  config: [true, { elementSeparator: '-', modifierSeparator: '_' }],
   accept: [
     {
       description: 'a single element level using custom separators',
