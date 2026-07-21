@@ -1,6 +1,6 @@
 import postcss from 'postcss';
 import { describe, expect, it } from 'vitest';
-import { buildBlockIndex, buildDefinedClassIndex } from './block-index.js';
+import { buildBlockIndex, buildDefinedClassIndex } from '@src/utils/block-index.js';
 
 const defaultOptions = { elementSeparator: '__', modifierSeparator: '--' };
 

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { isIgnoredSelector, resolveKnownBlocks, resolveSeparatorOptions } from './rule-options.js';
+import {
+  isIgnoredSelector,
+  resolveKnownBlocks,
+  resolveSeparatorOptions,
+} from '@src/utils/rule-options.js';
 
 describe('resolveSeparatorOptions', () => {
   it('falls back to defaults when no secondary options are given', () => {

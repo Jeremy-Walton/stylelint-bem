@@ -7,7 +7,14 @@ function checkNoOrphanedElement(root: Root, context: CheckContext): void {
     if (parsed.segments[0]?.separator !== 'element') return;
     if (isDefinedOrKnown(context, parsed.block, parsed.block)) return;
 
-    reportBemViolation(context, ruleNode, classNode, classNode.name, parsed.block);
+    reportBemViolation(
+      context,
+      ruleNode,
+      classNode,
+      context.messages.orphanedElement,
+      classNode.name,
+      parsed.block,
+    );
   });
 }
 

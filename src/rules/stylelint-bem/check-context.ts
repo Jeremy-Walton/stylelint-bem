@@ -14,7 +14,7 @@ interface CheckContext {
   ignoreSelectors?: (string | RegExp)[];
   definedClassIndex: Set<string>;
   knownBlocks: Set<string>;
-  message: RuleMessage;
+  messages: Record<string, RuleMessage>;
 }
 
 function forEachBemClass(
@@ -47,10 +47,11 @@ function reportBemViolation(
   context: CheckContext,
   ruleNode: Rule,
   classNode: ClassNode,
+  message: RuleMessage,
   ...messageArgs: string[]
 ): void {
   stylelint.utils.report({
-    message: context.message,
+    message,
     messageArgs,
     node: ruleNode,
     index: classNode.sourceIndex,

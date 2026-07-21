@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getClassNames, getClassNodes } from './selector-walker.js';
+import { getClassNames, getClassNodes } from '@src/utils/selector-walker.js';
 
 describe('getClassNames', () => {
   it('extracts a single class name', () => {

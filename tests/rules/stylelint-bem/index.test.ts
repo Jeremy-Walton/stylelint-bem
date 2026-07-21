@@ -3,8 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import stylelint from 'stylelint';
 import { afterEach, describe, expect, it } from 'vitest';
-import { testRule } from '../../test-utils/test-rule.js';
-import plugin, { messages, ruleName } from './index.js';
+import { testRule } from '@tests/test-utils/test-rule.js';
+import plugin, { messages, ruleName } from '@src/rules/stylelint-bem/index.js';
 
 testRule({
   plugin,

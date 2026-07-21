@@ -1,10 +1,10 @@
-import { testRule } from '../../../test-utils/test-rule.js';
-import plugin, { messages, ruleName } from '../index.js';
+import { testRule } from '@tests/test-utils/test-rule.js';
+import plugin, { messages, ruleName } from '@src/rules/stylelint-bem/index.js';
 
 testRule({
   plugin,
   ruleName,
-  config: { checks: { noOrphanedModifier: false } },
+  config: { checks: { noOrphanedModifier: false, noDoubleNestedElement: false } },
   accept: [
     {
       description: 'block and element defined as separate top-level rules',
@@ -84,7 +84,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: { checks: { noOrphanedModifier: false } },
+  config: { checks: { noOrphanedModifier: false, noDoubleNestedElement: false } },
   accept: [
     {
       description:

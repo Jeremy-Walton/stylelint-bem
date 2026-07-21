@@ -7,7 +7,7 @@ import {
   findProjectRoot,
   scanProjectDefinedClasses,
   scanProjectDefinedClassesForFile,
-} from './project-scan.js';
+} from '@src/utils/project-scan.js';
 
 const tmpDirs: string[] = [];
 

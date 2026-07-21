@@ -18,6 +18,8 @@ Technology choices, as decided.
 - **Vitest** — test runner, ESM-native.
 - stylelint `testRule`-style fixture harness for rule tests.
 - Strict TDD: red → green → refactor, per AGENTS.md.
+- Tests live under top-level `tests/`, mirroring `src/`'s directory structure 1:1, not colocated with source files.
+- Path aliases `@src/*` and `@tests/*` (mapped in `tsconfig.json`'s `paths`, and in `vitest.config.ts`'s `resolve.alias`) are used for imports instead of relative paths, e.g. `import { parseClassName } from '@src/utils/bem-parser.js'`. Aliases only affect module resolution for TypeScript/Vitest — the published build (`tsup`) never sees them, since nothing in `src/` currently imports via an alias.
 
 ## Build & tooling
 
@@ -35,8 +37,8 @@ Technology choices, as decided.
 
 - `src/index.ts` — plugin entry exporting the one rule.
 - `src/rules/stylelint-bem/index.ts` — the rule: option validation/resolution and dispatch to checks.
-- `src/rules/stylelint-bem/checks/<check-name>.ts` — one file per check (implementation + tests colocated), invoked by the rule based on the `checks` option.
-- `src/utils/` — shared BEM name parser, selector walker, per-file block/defined-class index.
+- `src/rules/stylelint-bem/checks/<check-name>.ts` — one file per check, invoked by the rule based on the `checks` option.
+- `src/utils/` — shared BEM name parser, selector walker, per-file block/defined-class index, project-wide file scan.
 - `src/configs/recommended.ts` — shareable config.
-- Rule options: `elementSeparator` (default `__`), `modifierSeparator` (default `--`), `ignoreSelectors`, `checks` (per-check on/off, all default `true`).
+- Rule options: `elementSeparator` (default `__`), `modifierSeparator` (default `--`), `ignoreSelectors`, `knownBlocks`, `checks` (per-check on/off, all default `true`).
 - No autofix — the rule reports only.

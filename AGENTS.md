@@ -14,7 +14,7 @@ A stylelint plugin (npm package `stylelint-bem`) that validates BEM methodology 
 ## Key decisions
 
 - A single rule, `plugin/stylelint-bem`; individual checks toggle via its `checks` option (all default `true` — opt-out, not opt-in). Check list and semantics: see `CHECKS.md`; usage/options: see `README.md`.
-- Orphan checks are same-file only. No autofix — report only.
+- Orphan checks look project-wide, not just the current file (see `CHECKS.md`); a `knownBlocks` option covers third-party classes that will never be defined in project CSS. No autofix — report only.
 - Ships a recommended shareable config.
 
 ## Workflow rules
@@ -30,9 +30,10 @@ A stylelint plugin (npm package `stylelint-bem`) that validates BEM methodology 
 
 ## Layout (once scaffolded)
 
-- `src/rules/<rule-name>/` — rule implementation + its tests
-- `src/utils/` — BEM name parser, selector walker, per-file block index
+- `src/rules/<rule-name>/` — rule implementation
+- `src/utils/` — BEM name parser, selector walker, per-file block index, project-wide scan
 - `src/index.ts` — plugin export; `src/configs/recommended.ts` — shareable config
+- `tests/` — tests, mirroring `src/`'s directory structure 1:1 (e.g. `src/utils/bem-parser.ts` ↔ `tests/utils/bem-parser.test.ts`). Kept out of `src/` so it's obvious at a glance what's real code vs. test code. Import from either tree via the `@src/*`/`@tests/*` aliases instead of relative paths (see `STACK.md`).
 - `docs/plans/` — planning docs
 
 ## Conventions

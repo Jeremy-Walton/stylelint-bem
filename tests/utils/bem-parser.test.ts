@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatClassName, isKebabCase, parseClassName } from './bem-parser.js';
+import { formatClassName, isKebabCase, parseClassName } from '@src/utils/bem-parser.js';
 
 const defaultOptions = { elementSeparator: '__', modifierSeparator: '--' };
 

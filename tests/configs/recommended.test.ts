@@ -1,7 +1,7 @@
 import stylelint from 'stylelint';
 import { describe, expect, it } from 'vitest';
-import recommended from './recommended.js';
-import { ruleName } from '../rules/stylelint-bem/index.js';
+import recommended from '@src/configs/recommended.js';
+import { ruleName } from '@src/rules/stylelint-bem/index.js';
 
 describe('recommended config', () => {
   it('enables the rule', () => {

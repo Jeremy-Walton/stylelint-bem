@@ -16,7 +16,14 @@ function checkNoOrphanedModifier(root: Root, context: CheckContext): void {
 
     if (isDefinedOrKnown(context, parsed.block, target)) return;
 
-    reportBemViolation(context, ruleNode, classNode, classNode.name, target);
+    reportBemViolation(
+      context,
+      ruleNode,
+      classNode,
+      context.messages.orphanedModifier,
+      classNode.name,
+      target,
+    );
   });
 }
 

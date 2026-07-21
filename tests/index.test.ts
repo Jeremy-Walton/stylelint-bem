@@ -1,8 +1,8 @@
 import type { Plugin } from 'stylelint';
 import stylelint from 'stylelint';
 import { describe, expect, it } from 'vitest';
-import plugins from './index.js';
-import { ruleName } from './rules/stylelint-bem/index.js';
+import plugins from '@src/index.js';
+import { ruleName } from '@src/rules/stylelint-bem/index.js';
 
 function ruleNameOf(plugin: Plugin): string {
   return 'ruleName' in plugin ? plugin.ruleName : plugin.default!.ruleName;
