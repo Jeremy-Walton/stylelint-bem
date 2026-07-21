@@ -1,7 +1,9 @@
 import stylelint from 'stylelint';
+import type { Root } from 'postcss';
 import { buildDefinedClassIndex } from '../../utils/block-index.js';
 import { resolveSeparatorOptions, sharedOptionsSchema } from '../../utils/rule-options.js';
 import type { BemSharedOptions } from '../../utils/rule-options.js';
+import type { CheckContext } from './check-context.js';
 import { checkNoOrphanedElement } from './checks/no-orphaned-element.js';
 import { checkNoOrphanedModifier } from './checks/no-orphaned-modifier.js';
 
@@ -14,7 +16,13 @@ const messages = stylelint.utils.ruleMessages(ruleName, {
     `Expected ".${targetName}" to be defined in this file (required by orphaned modifier ".${className}")`,
 });
 
-const CHECK_NAMES = ['noOrphanedElement', 'noOrphanedModifier'] as const;
+type CheckRunner = (root: Root, context: CheckContext) => void;
+
+const CHECK_DEFINITIONS = {
+  noOrphanedElement: { run: checkNoOrphanedElement, message: messages.orphanedElement },
+  noOrphanedModifier: { run: checkNoOrphanedModifier, message: messages.orphanedModifier },
+} satisfies Record<string, { run: CheckRunner; message: stylelint.RuleMessage }>;
+const CHECK_NAMES = Object.keys(CHECK_DEFINITIONS) as (keyof typeof CHECK_DEFINITIONS)[];
 type CheckName = (typeof CHECK_NAMES)[number];
 type Checks = Partial<Record<CheckName, boolean>>;
 
@@ -64,12 +72,11 @@ const rule: stylelint.Rule<true | StylelintBemOptions> = (primary) => {
 
     const checks = options?.checks ?? {};
 
-    if (checks.noOrphanedElement ?? true) {
-      checkNoOrphanedElement(root, { ...context, message: messages.orphanedElement });
-    }
-
-    if (checks.noOrphanedModifier ?? true) {
-      checkNoOrphanedModifier(root, { ...context, message: messages.orphanedModifier });
+    for (const name of CHECK_NAMES) {
+      if (checks[name] ?? true) {
+        const { run, message } = CHECK_DEFINITIONS[name];
+        run(root, { ...context, message });
+      }
     }
   };
 };
