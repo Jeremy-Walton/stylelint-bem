@@ -1,6 +1,6 @@
 import postcss from 'postcss';
 import { describe, expect, it } from 'vitest';
-import { buildBlockIndex } from './block-index.js';
+import { buildBlockIndex, buildDefinedClassIndex } from './block-index.js';
 
 const defaultOptions = { elementSeparator: '__', modifierSeparator: '--' };
 
@@ -43,5 +43,32 @@ describe('buildBlockIndex', () => {
     const root = parse('.card {} .card-title {}');
     const options = { elementSeparator: '-', modifierSeparator: '~~' };
     expect(buildBlockIndex(root, options)).toEqual(new Set(['card']));
+  });
+});
+
+describe('buildDefinedClassIndex', () => {
+  it('indexes a single top-level block', () => {
+    const root = parse('.card {}');
+    expect(buildDefinedClassIndex(root)).toEqual(new Set(['card']));
+  });
+
+  it('indexes BEM-shaped classes too, unlike buildBlockIndex', () => {
+    const root = parse(`
+      .card {
+        .card__title {}
+        &.card--featured {}
+      }
+    `);
+    expect(buildDefinedClassIndex(root)).toEqual(new Set(['card', 'card__title', 'card--featured']));
+  });
+
+  it('does not index a compound multi-class selector', () => {
+    const root = parse('.card.dark {}');
+    expect(buildDefinedClassIndex(root)).toEqual(new Set());
+  });
+
+  it('indexes both sides of a selector list', () => {
+    const root = parse('.card__title, .nav__title {}');
+    expect(buildDefinedClassIndex(root)).toEqual(new Set(['card__title', 'nav__title']));
   });
 });

@@ -79,5 +79,20 @@ function isKebabCase(name: string): boolean {
   return KEBAB_CASE_PATTERN.test(name);
 }
 
+function separatorValueFor(type: BemSegmentSeparator, options: BemSeparatorOptions): string {
+  return type === 'element' ? options.elementSeparator : options.modifierSeparator;
+}
+
+function formatClassName(
+  block: string,
+  segments: BemSegment[],
+  options: BemSeparatorOptions,
+): string {
+  return segments.reduce(
+    (className, segment) => className + separatorValueFor(segment.separator, options) + segment.name,
+    block,
+  );
+}
+
 export type { BemSeparatorOptions, BemSegmentSeparator, BemSegment, ParsedBemClassName };
-export { parseClassName, isKebabCase };
+export { parseClassName, isKebabCase, formatClassName };

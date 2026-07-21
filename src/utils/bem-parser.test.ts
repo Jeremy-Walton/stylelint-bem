@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isKebabCase, parseClassName } from './bem-parser.js';
+import { formatClassName, isKebabCase, parseClassName } from './bem-parser.js';
 
 const defaultOptions = { elementSeparator: '__', modifierSeparator: '--' };
 
@@ -127,5 +127,49 @@ describe('isKebabCase', () => {
 
   it('rejects empty names', () => {
     expect(isKebabCase('')).toBe(false);
+  });
+});
+
+describe('formatClassName', () => {
+  it('formats a bare block with no segments', () => {
+    expect(formatClassName('card', [], defaultOptions)).toBe('card');
+  });
+
+  it('formats a block with a single element segment', () => {
+    expect(
+      formatClassName('card', [{ separator: 'element', name: 'title' }], defaultOptions),
+    ).toBe('card__title');
+  });
+
+  it('formats a block with a single modifier segment', () => {
+    expect(
+      formatClassName('card', [{ separator: 'modifier', name: 'featured' }], defaultOptions),
+    ).toBe('card--featured');
+  });
+
+  it('formats a block with an element then a modifier', () => {
+    expect(
+      formatClassName(
+        'card',
+        [
+          { separator: 'element', name: 'title' },
+          { separator: 'modifier', name: 'large' },
+        ],
+        defaultOptions,
+      ),
+    ).toBe('card__title--large');
+  });
+
+  it('respects custom separators', () => {
+    const options = { elementSeparator: '-', modifierSeparator: '~' };
+    expect(formatClassName('card', [{ separator: 'element', name: 'title' }], options)).toBe(
+      'card-title',
+    );
+  });
+
+  it('round-trips with parseClassName', () => {
+    const original = 'card__title--large';
+    const parsed = parseClassName(original, defaultOptions);
+    expect(formatClassName(parsed.block, parsed.segments, defaultOptions)).toBe(original);
   });
 });

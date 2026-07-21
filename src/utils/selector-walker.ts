@@ -1,15 +1,25 @@
 import parser from 'postcss-selector-parser';
 
-function getClassNames(selector: string): string[] {
-  const classNames: string[] = [];
+interface ClassNode {
+  name: string;
+  sourceIndex: number;
+}
+
+function getClassNodes(selector: string): ClassNode[] {
+  const classNodes: ClassNode[] = [];
 
   parser((root) => {
     root.walkClasses((classNode) => {
-      classNames.push(classNode.value);
+      classNodes.push({ name: classNode.value, sourceIndex: classNode.sourceIndex });
     });
   }).processSync(selector);
 
-  return classNames;
+  return classNodes;
 }
 
-export { getClassNames };
+function getClassNames(selector: string): string[] {
+  return getClassNodes(selector).map((classNode) => classNode.name);
+}
+
+export type { ClassNode };
+export { getClassNames, getClassNodes };

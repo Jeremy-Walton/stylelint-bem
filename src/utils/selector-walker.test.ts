@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getClassNames } from './selector-walker.js';
+import { getClassNames, getClassNodes } from './selector-walker.js';
 
 describe('getClassNames', () => {
   it('extracts a single class name', () => {
@@ -32,5 +32,32 @@ describe('getClassNames', () => {
 
   it('returns an empty array for a selector with no classes', () => {
     expect(getClassNames('* > div')).toEqual([]);
+  });
+});
+
+describe('getClassNodes', () => {
+  it('reports the source index of a single class', () => {
+    expect(getClassNodes('.card')).toEqual([{ name: 'card', sourceIndex: 0 }]);
+  });
+
+  it('reports source indices for compound class selectors', () => {
+    expect(getClassNodes('.card.card--featured')).toEqual([
+      { name: 'card', sourceIndex: 0 },
+      { name: 'card--featured', sourceIndex: 5 },
+    ]);
+  });
+
+  it('reports source indices across combinators', () => {
+    expect(getClassNodes('.card > .card__title')).toEqual([
+      { name: 'card', sourceIndex: 0 },
+      { name: 'card__title', sourceIndex: 8 },
+    ]);
+  });
+
+  it('reports source indices per selector in a selector list', () => {
+    expect(getClassNodes('.card__title, .card__body')).toEqual([
+      { name: 'card__title', sourceIndex: 0 },
+      { name: 'card__body', sourceIndex: 14 },
+    ]);
   });
 });
