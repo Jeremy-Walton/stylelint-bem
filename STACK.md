@@ -12,6 +12,7 @@ Technology choices, as decided.
 - **stylelint 16.x or 17.x** — peer dependency. Widened from "16.x only" 2026-07-21 after a real-world run against stylelint 17.10.0 worked with no changes; not yet cross-checked against stylelint's 16→17 migration notes (see `docs/plans/PLAN.md`).
 - **postcss-selector-parser** — selector AST work (preferred over regex on raw selectors).
 - PostCSS AST (via stylelint) for walking rules and nesting structure.
+- **postcss-scss** — used only by the project-wide scanner (`src/utils/project-scan.ts`) to parse `.scss` files it discovers on disk (decided 2026-07-21, after a real-world SCSS dogfood crash — see `docs/plans/PLAN.md`). It parses plain CSS fine too (a syntax superset), so it's used for every scanned file, not just `.scss`, avoiding a branch on extension. This does **not** make the plugin SCSS-aware in general — the rule itself still only ever sees whatever PostCSS AST stylelint hands it for the file actually being linted, parsed with whatever `customSyntax` the *consuming project's own* stylelint config specifies (that's a stylelint-level setting, invisible to a plugin rule). Scope is deliberately narrow: SCSS files can be scanned so a block defined in one satisfies the orphan checks for a class elsewhere.
 
 ## Testing
 

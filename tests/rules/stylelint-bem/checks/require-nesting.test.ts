@@ -124,6 +124,77 @@ testRule({
 testRule({
   plugin,
   ruleName,
+  config: { checks: { ...isolate, requireNesting: 'strict' } },
+  reject: [
+    {
+      description: 'the string "strict" behaves identically to the default/true',
+      code: '.card--featured {}',
+      warnings: [{ message: messages.modifierNotCompound('card--featured') }],
+    },
+  ],
+});
+
+testRule({
+  plugin,
+  ruleName,
+  config: { checks: { ...isolate, requireNesting: false } },
+  accept: [
+    {
+      description: 'false disables the check entirely, even for badly-shaped top-level classes',
+      code: '.card__title {} .card--featured {} .card__header__title {}',
+    },
+  ],
+});
+
+testRule({
+  plugin,
+  ruleName,
+  config: { checks: { ...isolate, requireNesting: 'weak' } },
+  accept: [
+    {
+      description: 'weak allows a modifier written flat, with no ancestor at all',
+      code: '.card--featured {}',
+    },
+    {
+      description: 'weak allows an element written flat, with no ancestor at all',
+      code: '.card__title {}',
+    },
+    {
+      description: 'weak still accepts a correctly compound-nested modifier (no regression)',
+      code: '.card { &.card--featured {} }',
+    },
+    {
+      description: 'weak still accepts a correctly nested element (no regression)',
+      code: '.card { .card__title {} }',
+    },
+  ],
+  reject: [
+    {
+      description: 'weak still flags a modifier nested under the wrong ancestor',
+      code: '.nav { &.card--featured {} }',
+      warnings: [{ message: messages.modifierNotNestedDirectly('card--featured', 'card') }],
+    },
+    {
+      description: 'weak still flags an element nested under the wrong ancestor',
+      code: '.nav { .card__title {} }',
+      warnings: [{ message: messages.elementNotNested('card__title', 'card') }],
+    },
+    {
+      description: 'weak still flags a modifier that has an ancestor but is not compound-nested',
+      code: '.card { .card--featured {} }',
+      warnings: [{ message: messages.modifierNotCompound('card--featured') }],
+    },
+    {
+      description: 'weak still flags an element that has an ancestor but uses a compound "&" selector',
+      code: '.card { &.card__title {} }',
+      warnings: [{ message: messages.elementNotFullSelector('card__title') }],
+    },
+  ],
+});
+
+testRule({
+  plugin,
+  ruleName,
   config: { checks: isolate, elementSeparator: '-', modifierSeparator: '_' },
   accept: [
     {

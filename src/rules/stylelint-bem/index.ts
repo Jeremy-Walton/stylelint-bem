@@ -8,7 +8,7 @@ import {
   sharedOptionsSchema,
 } from '../../utils/rule-options.js';
 import type { BemSharedOptions } from '../../utils/rule-options.js';
-import type { CheckContext } from './check-context.js';
+import type { CheckContext, RequireNestingMode } from './check-context.js';
 import { checkNoDoubleNestedElement } from './checks/no-double-nested-element.js';
 import { checkNoOrphanedElement } from './checks/no-orphaned-element.js';
 import { checkNoOrphanedModifier } from './checks/no-orphaned-modifier.js';
@@ -49,7 +49,9 @@ const CHECK_DEFINITIONS = {
 } satisfies Record<string, CheckRunner>;
 const CHECK_NAMES = Object.keys(CHECK_DEFINITIONS) as (keyof typeof CHECK_DEFINITIONS)[];
 type CheckName = (typeof CHECK_NAMES)[number];
-type Checks = Partial<Record<CheckName, boolean>>;
+type Checks = {
+  [K in CheckName]?: K extends 'requireNesting' ? boolean | RequireNestingMode : boolean;
+};
 
 interface StylelintBemOptions extends BemSharedOptions {
   checks?: Checks;
@@ -59,13 +61,24 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function isRequireNestingValue(value: unknown): value is boolean | RequireNestingMode {
+  return typeof value === 'boolean' || value === 'strict' || value === 'weak';
+}
+
 function isChecksOption(value: unknown): boolean {
   if (!isPlainObject(value)) return false;
 
-  return Object.entries(value).every(
-    ([key, checkValue]) =>
-      (CHECK_NAMES as readonly string[]).includes(key) && typeof checkValue === 'boolean',
-  );
+  return Object.entries(value).every(([key, checkValue]) => {
+    if (!(CHECK_NAMES as readonly string[]).includes(key)) return false;
+
+    return key === 'requireNesting'
+      ? isRequireNestingValue(checkValue)
+      : typeof checkValue === 'boolean';
+  });
+}
+
+function resolveRequireNestingMode(checks: Checks): RequireNestingMode {
+  return checks.requireNesting === 'weak' ? 'weak' : 'strict';
 }
 
 const rule: stylelint.Rule<true | StylelintBemOptions> = (primary) => {
@@ -88,6 +101,7 @@ const rule: stylelint.Rule<true | StylelintBemOptions> = (primary) => {
     if (!validOptions) return;
 
     const projectClasses = await scanProjectDefinedClassesForFile(root);
+    const checks = options?.checks ?? {};
 
     const context: CheckContext = {
       ruleName,
@@ -96,10 +110,9 @@ const rule: stylelint.Rule<true | StylelintBemOptions> = (primary) => {
       ignoreSelectors: options?.ignoreSelectors,
       knownBlocks: resolveKnownBlocks(options),
       definedClassIndex: new Set([...projectClasses, ...buildDefinedClassIndex(root)]),
+      requireNestingMode: resolveRequireNestingMode(checks),
       messages,
     };
-
-    const checks = options?.checks ?? {};
 
     for (const name of CHECK_NAMES) {
       if (checks[name] ?? true) CHECK_DEFINITIONS[name](root, context);

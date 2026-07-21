@@ -7,6 +7,8 @@ import { isIgnoredSelector } from '../../utils/rule-options.js';
 import { getClassNodes } from '../../utils/selector-walker.js';
 import type { ClassNode } from '../../utils/selector-walker.js';
 
+type RequireNestingMode = 'strict' | 'weak';
+
 interface CheckContext {
   ruleName: string;
   result: PostcssResult;
@@ -14,6 +16,7 @@ interface CheckContext {
   ignoreSelectors?: (string | RegExp)[];
   definedClassIndex: Set<string>;
   knownBlocks: Set<string>;
+  requireNestingMode: RequireNestingMode;
   messages: Record<string, RuleMessage>;
 }
 
@@ -61,5 +64,5 @@ function reportBemViolation(
   });
 }
 
-export type { CheckContext };
+export type { CheckContext, RequireNestingMode };
 export { forEachBemClass, reportBemViolation, isDefinedOrKnown };

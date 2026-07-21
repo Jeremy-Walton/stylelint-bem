@@ -19,7 +19,7 @@ Every part (block, element, modifier) of a BEM class must be kebab-case: lowerca
 
 ## `noOrphanedElement`
 
-`.block__thing` is only valid if `.block` is defined somewhere in the project — the current file, or any other CSS file under the project root (the nearest directory containing a `package.json`, walking up from the linted file; `node_modules` and symlinks are never scanned). A block name listed in `knownBlocks` is always treated as defined, for classes that come from a third-party dependency and are never defined in any project CSS file.
+`.block__thing` is only valid if `.block` is defined somewhere in the project — the current file, or any other `.css`/`.scss` file under the project root (the nearest directory containing a `package.json`, walking up from the linted file; `node_modules` and symlinks are never scanned). A block name listed in `knownBlocks` is always treated as defined, for classes that come from a third-party dependency and are never defined in any project CSS/SCSS file.
 
 ```css
 /* invalid — .card is never defined anywhere in the project */
@@ -60,6 +60,8 @@ Elements and modifiers must be defined inside their block's rule via native CSS 
 - Modifiers: compound `&` selector directly under what they modify — `.block { &.block--mod { } }`.
 - Element modifiers: `&.block__el--mod` under `.block__el`, which is itself nested in `.block`.
 
+`@media`/`@supports` (and other at-rules) are transparent for this check — they never count as a nesting level. A modifier compound-nested directly inside a `@media` that's itself directly inside its block still satisfies "directly under"; an element inside a `@media` at any depth inside its block still satisfies "at any depth".
+
 ```css
 /* valid */
 .card {
@@ -72,4 +74,30 @@ Elements and modifiers must be defined inside their block's rule via native CSS 
 /* invalid — element defined at top level */
 .card { }
 .card__title { }
+```
+
+### Strictness: `strict` / `weak` / `false`
+
+Unlike the other checks, `requireNesting` takes more than a boolean — `checks.requireNesting` accepts `true` (equivalent to `"strict"`), `"strict"`, `"weak"`, or `false`.
+
+By construction, `requireNesting` can only ever validate nesting within the *current file's* AST — it has no way to confirm nesting against a block defined in a different file, even though that block is a legitimate, fully-defined part of the project (see `noOrphanedElement`). This makes **`strict`** mode (the default) incompatible with a common, legitimate pattern: a shared component's block lives in one file, and a page/feature file customizes it with a modifier or element written flat, without re-declaring the block's nesting:
+
+```css
+/* shared/button.css */
+.btn {
+  &.btn--large { }
+}
+
+/* pages/dashboard.css — customizing .btn from a different file */
+.btn--jumbo { }
+```
+
+Under `strict`, `.btn--jumbo` is flagged (`.btn` isn't nested in *this* file, so there's nothing to compound `&` against). **`weak`** mode only validates nesting when it's actually attempted — a class with no ancestor rule at all is left unchecked, which allows the pattern above while still catching genuine mistakes (a class nested under the *wrong* ancestor, or nested but with the wrong shape, is still flagged either way). **`false`** disables the check entirely.
+
+```json
+{
+  "plugin/stylelint-bem": {
+    "checks": { "requireNesting": "weak" }
+  }
+}
 ```

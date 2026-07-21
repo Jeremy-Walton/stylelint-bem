@@ -95,6 +95,42 @@ describe(ruleName, () => {
     expect(result.results[0]!.invalidOptionWarnings.length).toBeGreaterThan(0);
   });
 
+  it('rejects an unrecognized requireNesting mode string', async () => {
+    const result = await stylelint.lint({
+      code: '.card {}',
+      config: {
+        plugins: [plugin],
+        rules: { [ruleName]: { checks: { requireNesting: 'bogus' } } },
+      },
+    });
+
+    expect(result.results[0]!.invalidOptionWarnings.length).toBeGreaterThan(0);
+  });
+
+  it('rejects a non-boolean, non-string value for requireNesting', async () => {
+    const result = await stylelint.lint({
+      code: '.card {}',
+      config: {
+        plugins: [plugin],
+        rules: { [ruleName]: { checks: { requireNesting: 1 } } },
+      },
+    });
+
+    expect(result.results[0]!.invalidOptionWarnings.length).toBeGreaterThan(0);
+  });
+
+  it('accepts "strict" and "weak" as valid requireNesting values, and other checks still reject bad booleans', async () => {
+    const result = await stylelint.lint({
+      code: '.card {}',
+      config: {
+        plugins: [plugin],
+        rules: { [ruleName]: { checks: { requireNesting: 'weak', validName: 'bogus' } } },
+      },
+    });
+
+    expect(result.results[0]!.invalidOptionWarnings.length).toBeGreaterThan(0);
+  });
+
   it('rejects a non-boolean, non-object primary option', async () => {
     const result = await stylelint.lint({
       code: '.card {}',

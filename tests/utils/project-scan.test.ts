@@ -104,6 +104,38 @@ describe('scanProjectDefinedClasses', () => {
     expect(classes).toEqual(new Set(['good']));
   });
 
+  it('indexes classes defined in .scss files alongside .css files', async () => {
+    const root = await makeTmpDir();
+    await fs.writeFile(path.join(root, 'button.css'), '.btn {}');
+    await fs.writeFile(path.join(root, 'card.scss'), '.card { .card__title {} }');
+
+    const classes = await scanProjectDefinedClasses(root);
+
+    expect(classes).toEqual(new Set(['btn', 'card', 'card__title']));
+  });
+
+  it('parses .scss-specific syntax (line comments) that would crash a plain CSS parser', async () => {
+    const root = await makeTmpDir();
+    await fs.writeFile(
+      path.join(root, 'card.scss'),
+      '// a line comment, invalid in plain CSS\n.card {\n  .card__title {}\n}\n',
+    );
+
+    const classes = await scanProjectDefinedClasses(root);
+
+    expect(classes).toEqual(new Set(['card', 'card__title']));
+  });
+
+  it('skips .scss files that fail to parse instead of throwing', async () => {
+    const root = await makeTmpDir();
+    await fs.writeFile(path.join(root, 'broken.scss'), '.broken {');
+    await fs.writeFile(path.join(root, 'good.scss'), '.good {}');
+
+    const classes = await scanProjectDefinedClasses(root);
+
+    expect(classes).toEqual(new Set(['good']));
+  });
+
   it('caches the scan for a given project root', async () => {
     const root = await makeTmpDir();
     await fs.writeFile(path.join(root, 'one.css'), '.a {}');

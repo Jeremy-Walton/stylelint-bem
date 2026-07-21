@@ -33,8 +33,8 @@ The rule's primary option is either `true` or an object:
 | `elementSeparator` | `string` | `__` | Separator marking an element |
 | `modifierSeparator` | `string` | `--` | Separator marking a modifier |
 | `ignoreSelectors` | `(string \| RegExp)[]` | `[]` | Selectors to skip entirely. String entries match exactly; `RegExp` entries use `.test()`. |
-| `knownBlocks` | `string[]` | `[]` | Block names always treated as defined, wherever they appear — for third-party/vendor classes (e.g. a component library's own DOM classes) that will never be defined in any project CSS file. |
-| `checks` | `object` | all `true` | Per-check on/off switches — see `CHECKS.md` for the full list. Only keys for checks you want to turn **off** need to be present. |
+| `knownBlocks` | `string[]` | `[]` | Block names always treated as defined, wherever they appear — for third-party/vendor classes (e.g. a component library's own DOM classes) that will never be defined in any project CSS/SCSS file. |
+| `checks` | `object` | all `true` | Per-check on/off switches — see `CHECKS.md` for the full list. Only keys for checks you want to turn **off** need to be present. `requireNesting` also accepts `"strict"`/`"weak"` instead of a boolean — see `CHECKS.md` for what `weak` relaxes. |
 
 Only class names using the configured separators are checked — non-BEM selectors are never flagged. No check provides autofix.
 

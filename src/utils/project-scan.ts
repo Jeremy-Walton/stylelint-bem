@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import fg from 'fast-glob';
-import postcss from 'postcss';
+import scssSyntax from 'postcss-scss';
 import type { Root } from 'postcss';
 import { buildDefinedClassIndex } from './block-index.js';
 
@@ -33,7 +33,7 @@ async function scanProjectDefinedClasses(projectRoot: string): Promise<Set<strin
 }
 
 async function performScan(projectRoot: string): Promise<Set<string>> {
-  const files = await fg('**/*.css', {
+  const files = await fg('**/*.{css,scss}', {
     cwd: projectRoot,
     absolute: true,
     ignore: ['**/node_modules/**'],
@@ -53,7 +53,10 @@ async function performScan(projectRoot: string): Promise<Set<string>> {
       }
 
       try {
-        const root = postcss.parse(css, { from: file });
+        // postcss-scss parses plain CSS fine too (it's a superset), so using it for every
+        // matched file — not just .scss — avoids branching on extension while still handling
+        // SCSS-only syntax (e.g. "//" line comments) that would crash the default CSS parser.
+        const root = scssSyntax.parse(css, { from: file });
         for (const className of buildDefinedClassIndex(root)) classes.add(className);
       } catch {
         // Skip files that fail to parse — a broken file elsewhere in the project

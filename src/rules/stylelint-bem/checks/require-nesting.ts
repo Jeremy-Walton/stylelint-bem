@@ -13,6 +13,12 @@ function ruleHasBareMatch(ruleNode: Rule, className: string): boolean {
 
 function checkRequireNesting(root: Root, context: CheckContext): void {
   forEachBemClass(root, context, (ruleNode, classNode, parsed) => {
+    // Weak mode only validates nesting when the author actually attempted it (there's at
+    // least one ancestor rule). A class with no ancestor at all is left unchecked — the
+    // common case being a page/feature file adding a modifier or element onto a block that's
+    // defined (and nested) in a different, shared file, which strict mode can never satisfy.
+    if (context.requireNestingMode === 'weak' && findAncestorRules(ruleNode).length === 0) return;
+
     const lastSegment = parsed.segments[parsed.segments.length - 1]!;
     const expectedParentName = formatClassName(
       parsed.block,
