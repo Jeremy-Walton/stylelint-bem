@@ -9,7 +9,6 @@ A stylelint plugin (npm package `stylelint-bem`) that validates BEM methodology 
 - `README.md` — install, usage, the rule's options, and how to enable/disable individual checks.
 - `STACK.md` — the technology choices we've made.
 - `docs/bem.md` — the team's existing "Working with BEM" guide (an external resource; do not modify it).
-- `docs/plans/PLAN.md` — decision log, phase breakdown, current status, and handoff contract. Read before doing any work. Do not re-ask questions already answered in its Decisions table.
 
 ## Key decisions
 
@@ -19,9 +18,7 @@ A stylelint plugin (npm package `stylelint-bem`) that validates BEM methodology 
 
 ## Workflow rules
 
-1. **Strict TDD.** Write tests first, run them, confirm they fail for the right reason, then implement to green, then refactor. No behavior without a driving test.
-2. **Phase gates.** Work proceeds in the phases defined in PLAN.md. At the end of each phase, STOP and ask Jeremy for review before starting the next. Review adjustments become new failing tests first.
-3. **Keep PLAN.md current.** Update its "Current status" line and record review adjustments as you go.
+- **Strict TDD.** Write tests first, run them, confirm they fail for the right reason, then implement to green, then refactor. No behavior without a driving test.
 
 ## Commands
 
@@ -35,7 +32,6 @@ A stylelint plugin (npm package `stylelint-bem`) that validates BEM methodology 
 - `src/utils/` — BEM name parser, selector walker, per-file block index, project-wide scan
 - `src/index.ts` — plugin export; `src/configs/recommended.ts` — shareable config
 - `tests/` — tests, mirroring `src/`'s directory structure 1:1 (e.g. `src/utils/bem-parser.ts` ↔ `tests/utils/bem-parser.test.ts`). Kept out of `src/` so it's obvious at a glance what's real code vs. test code. Import from either tree via the `@src/*`/`@tests/*` aliases instead of relative paths (see `STACK.md`).
-- `docs/plans/` — planning docs
 
 ## Conventions
 
