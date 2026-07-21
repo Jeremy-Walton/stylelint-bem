@@ -1,10 +1,10 @@
-import { testRule } from '../../test-utils/test-rule.js';
-import plugin, { messages, ruleName } from './index.js';
+import { testRule } from '../../../test-utils/test-rule.js';
+import plugin, { messages, ruleName } from '../index.js';
 
 testRule({
   plugin,
   ruleName,
-  config: true,
+  config: { checks: { noOrphanedModifier: false } },
   accept: [
     {
       description: 'block and element defined as separate top-level rules',
@@ -27,24 +27,24 @@ testRule({
     {
       description: 'element defined with no matching block anywhere in the file',
       code: '.card__title {}',
-      warnings: [{ message: messages.rejected('card__title', 'card') }],
+      warnings: [{ message: messages.orphanedElement('card__title', 'card') }],
     },
     {
       description: 'double-nested element name still needs its leading block defined',
       code: '.card__header__title {}',
-      warnings: [{ message: messages.rejected('card__header__title', 'card') }],
+      warnings: [{ message: messages.orphanedElement('card__header__title', 'card') }],
     },
     {
       description: 'element nested under an unrelated block does not satisfy the check',
       code: '.nav { .card__title {} }',
-      warnings: [{ message: messages.rejected('card__title', 'card') }],
+      warnings: [{ message: messages.orphanedElement('card__title', 'card') }],
     },
     {
       description: 'each orphaned element in a selector list is reported separately',
       code: '.card__title, .nav__title {}',
       warnings: [
-        { message: messages.rejected('card__title', 'card') },
-        { message: messages.rejected('nav__title', 'nav') },
+        { message: messages.orphanedElement('card__title', 'card') },
+        { message: messages.orphanedElement('nav__title', 'nav') },
       ],
     },
   ],
@@ -53,7 +53,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: [true, { ignoreSelectors: ['.foo__bar'] }],
+  config: { checks: { noOrphanedModifier: false }, ignoreSelectors: ['.foo__bar'] },
   accept: [
     {
       description: 'orphaned element matching an ignored selector is not flagged',
@@ -65,7 +65,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: [true, { elementSeparator: '-' }],
+  config: { checks: { noOrphanedModifier: false }, elementSeparator: '-' },
   accept: [
     {
       description: 'block and element defined using a custom element separator',
@@ -76,7 +76,7 @@ testRule({
     {
       description: 'orphaned element using a custom element separator',
       code: '.card-title {}',
-      warnings: [{ message: messages.rejected('card-title', 'card') }],
+      warnings: [{ message: messages.orphanedElement('card-title', 'card') }],
     },
   ],
 });
@@ -84,11 +84,11 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: true,
+  config: { checks: { noOrphanedModifier: false } },
   accept: [
     {
       description:
-        'a class shaped like "block--modifier__element" is owned by no-orphaned-modifier, not this rule',
+        'a class shaped like "block--modifier__element" is an invalid shape (modifiers cannot be followed by an element) and is not this check\'s concern',
       code: '.card--featured__title {}',
     },
   ],

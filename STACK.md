@@ -28,14 +28,15 @@ Technology choices, as decided.
 ## Distribution
 
 - npm package **`stylelint-bem`**, public.
-- Rule namespace: **`plugin/stylelint-bem-*`**.
-- Ships a **recommended shareable config** alongside individually enableable rules.
+- A **single** rule, namespaced **`plugin/stylelint-bem`** — not one rule per check (revised 2026-07-21; see `CHECKS.md`).
+- Ships a **recommended shareable config** that enables the rule with all checks on.
 
 ## Plugin architecture
 
-- `src/index.ts` — plugin entry exporting all rules.
-- `src/rules/<rule-name>/` — one folder per rule, implementation + tests colocated.
-- `src/utils/` — shared BEM name parser, selector walker, per-file block index.
+- `src/index.ts` — plugin entry exporting the one rule.
+- `src/rules/stylelint-bem/index.ts` — the rule: option validation/resolution and dispatch to checks.
+- `src/rules/stylelint-bem/checks/<check-name>.ts` — one file per check (implementation + tests colocated), invoked by the rule based on the `checks` option.
+- `src/utils/` — shared BEM name parser, selector walker, per-file block/defined-class index.
 - `src/configs/recommended.ts` — shareable config.
-- Shared secondary options across rules: `elementSeparator` (default `__`), `modifierSeparator` (default `--`), `ignoreSelectors`.
-- No autofix — all rules report only.
+- Rule options: `elementSeparator` (default `__`), `modifierSeparator` (default `--`), `ignoreSelectors`, `checks` (per-check on/off, all default `true`).
+- No autofix — the rule reports only.

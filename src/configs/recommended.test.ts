@@ -1,14 +1,12 @@
 import stylelint from 'stylelint';
 import { describe, expect, it } from 'vitest';
 import recommended from './recommended.js';
-import { ruleName as noOrphanedElementRuleName } from '../rules/no-orphaned-element/index.js';
-import { ruleName as noOrphanedModifierRuleName } from '../rules/no-orphaned-modifier/index.js';
+import { ruleName } from '../rules/stylelint-bem/index.js';
 
 describe('recommended config', () => {
-  it('enables both rules', () => {
+  it('enables the rule', () => {
     expect(recommended.rules).toMatchObject({
-      [noOrphanedElementRuleName]: true,
-      [noOrphanedModifierRuleName]: true,
+      [ruleName]: true,
     });
   });
 
@@ -18,8 +16,9 @@ describe('recommended config', () => {
       config: recommended,
     });
 
-    const rulesReported = result.results[0]!.warnings.map((warning) => warning.rule).sort();
-    expect(rulesReported).toEqual([noOrphanedElementRuleName, noOrphanedModifierRuleName].sort());
+    const warnings = result.results[0]!.warnings;
+    expect(warnings).toHaveLength(2);
+    expect(warnings.every((warning) => warning.rule === ruleName)).toBe(true);
   });
 
   it('does not flag well-formed BEM CSS', async () => {

@@ -5,14 +5,15 @@ A stylelint plugin (npm package `stylelint-bem`) that validates BEM methodology 
 ## Source of truth
 
 - `PRODUCT.md` — what this project is and why (purpose, scope, non-goals). Read this first for context.
-- `RULES.md` — the central list of lint rules, their semantics, and shared options. Authoritative for rule behavior.
+- `CHECKS.md` — the central list of checks the plugin runs and their semantics. Authoritative for check behavior.
+- `README.md` — install, usage, the rule's options, and how to enable/disable individual checks.
 - `STACK.md` — the technology choices we've made.
 - `docs/bem.md` — the team's existing "Working with BEM" guide (an external resource; do not modify it).
 - `docs/plans/PLAN.md` — decision log, phase breakdown, current status, and handoff contract. Read before doing any work. Do not re-ask questions already answered in its Decisions table.
 
 ## Key decisions
 
-- Rule namespace: `plugin/stylelint-bem-*`. Rule list and semantics: see `RULES.md`.
+- A single rule, `plugin/stylelint-bem`; individual checks toggle via its `checks` option (all default `true` — opt-out, not opt-in). Check list and semantics: see `CHECKS.md`; usage/options: see `README.md`.
 - Orphan checks are same-file only. No autofix — report only.
 - Ships a recommended shareable config.
 

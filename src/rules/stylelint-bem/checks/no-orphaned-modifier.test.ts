@@ -1,10 +1,10 @@
-import { testRule } from '../../test-utils/test-rule.js';
-import plugin, { messages, ruleName } from './index.js';
+import { testRule } from '../../../test-utils/test-rule.js';
+import plugin, { messages, ruleName } from '../index.js';
 
 testRule({
   plugin,
   ruleName,
-  config: true,
+  config: { checks: { noOrphanedElement: false } },
   accept: [
     {
       description: 'block and modifier defined as separate top-level rules',
@@ -32,25 +32,25 @@ testRule({
     {
       description: 'modifier defined with no matching block anywhere in the file',
       code: '.card--featured {}',
-      warnings: [{ message: messages.rejected('card--featured', 'card') }],
+      warnings: [{ message: messages.orphanedModifier('card--featured', 'card') }],
     },
     {
       description:
         'element-modifier whose immediate target (the element) was never defined, even though the root block was',
       code: '.card {} .card__title--large {}',
-      warnings: [{ message: messages.rejected('card__title--large', 'card__title') }],
+      warnings: [{ message: messages.orphanedModifier('card__title--large', 'card__title') }],
     },
     {
       description: 'modifier nested under an unrelated block does not satisfy the check',
       code: '.nav { &.card--featured {} }',
-      warnings: [{ message: messages.rejected('card--featured', 'card') }],
+      warnings: [{ message: messages.orphanedModifier('card--featured', 'card') }],
     },
     {
       description: 'each orphaned modifier in a selector list is reported separately',
       code: '.card--featured, .nav--featured {}',
       warnings: [
-        { message: messages.rejected('card--featured', 'card') },
-        { message: messages.rejected('nav--featured', 'nav') },
+        { message: messages.orphanedModifier('card--featured', 'card') },
+        { message: messages.orphanedModifier('nav--featured', 'nav') },
       ],
     },
   ],
@@ -59,7 +59,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: [true, { ignoreSelectors: ['.foo--bar'] }],
+  config: { checks: { noOrphanedElement: false }, ignoreSelectors: ['.foo--bar'] },
   accept: [
     {
       description: 'orphaned modifier matching an ignored selector is not flagged',
@@ -71,7 +71,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: [true, { modifierSeparator: '_' }],
+  config: { checks: { noOrphanedElement: false }, modifierSeparator: '_' },
   accept: [
     {
       description: 'block and modifier defined using a custom modifier separator',
@@ -82,7 +82,7 @@ testRule({
     {
       description: 'orphaned modifier using a custom modifier separator',
       code: '.card_featured {}',
-      warnings: [{ message: messages.rejected('card_featured', 'card') }],
+      warnings: [{ message: messages.orphanedModifier('card_featured', 'card') }],
     },
   ],
 });

@@ -10,7 +10,7 @@ CSS written with BEM methodology degrades quietly. Elements get defined without 
 
 The plugin treats native CSS nesting as the mechanism that keeps BEM honest: a block's elements and modifiers should live *inside* the block's rule, so they can't apply outside their intended block. Around that idea, it enforces nesting structure, catches orphaned elements and modifiers whose block was never defined, and rejects invalid name shapes like double-nested elements.
 
-The full rule list and semantics live in `RULES.md`. More rules may follow.
+The full check list and semantics live in `CHECKS.md`. More checks may follow.
 
 ## What it deliberately doesn't do
 
