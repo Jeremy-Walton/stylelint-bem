@@ -13,6 +13,19 @@ interface ClassNode {
   sourceIndex: number;
   nestingShape: NestingShape;
   compoundClassNames?: string[];
+  enclosingPseudos?: string[];
+}
+
+// Pseudo-classes the class sits inside as an argument (e.g. ':has' for `&:has(.block--mod)`),
+// outermost first — absent when the class is not inside any pseudo's arguments.
+function getEnclosingPseudos(classNode: parser.ClassName): string[] {
+  const pseudos: string[] = [];
+
+  for (let node = classNode.parent; node; node = node.parent as parser.Container | undefined) {
+    if (node.type === 'pseudo') pseudos.unshift(node.value);
+  }
+
+  return pseudos;
 }
 
 type ShapeAnalysis = Pick<ClassNode, 'nestingShape' | 'compoundClassNames'>;
@@ -58,10 +71,13 @@ function getClassNodes(selector: string): ClassNode[] {
 
   parser((root) => {
     root.walkClasses((classNode) => {
+      const enclosingPseudos = getEnclosingPseudos(classNode);
+
       classNodes.push({
         name: classNode.value,
         sourceIndex: classNode.sourceIndex,
         ...analyzeNestingShape(classNode),
+        ...(enclosingPseudos.length > 0 ? { enclosingPseudos } : {}),
       });
     });
   }).processSync(selector);

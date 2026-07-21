@@ -32,6 +32,7 @@ function ruleDefinesClass(ruleNode: Rule, className: string): boolean {
     getClassNodes(selector).some(
       (node) =>
         node.name === className &&
+        !isInsideNonSubjectPseudo(node) &&
         (node.nestingShape === 'bare' || node.nestingShape === 'class-compound'),
     ),
   );
@@ -41,8 +42,21 @@ function isCompoundedWith(classNode: ClassNode, className: string): boolean {
   return classNode.nestingShape === 'class-compound' && classNode.compoundClassNames!.includes(className);
 }
 
+// Pseudo-classes whose arguments only filter the subject — a class inside them is a match
+// condition, never the element being styled, so it isn't a definition this rule governs.
+// `:is()`/`:where()` are absent on purpose: their arguments form the subject itself.
+const NON_SUBJECT_PSEUDOS = new Set([':has', ':not', ':nth-child', ':nth-last-child']);
+
+function isInsideNonSubjectPseudo(classNode: ClassNode): boolean {
+  return (
+    classNode.enclosingPseudos?.some((pseudo) => NON_SUBJECT_PSEUDOS.has(pseudo.toLowerCase())) ?? false
+  );
+}
+
 function checkRequireNesting(root: Root, context: RuleContext, mode: RequireNestingMode): void {
   forEachBemClass(root, context, (ruleNode, classNode, parsed) => {
+    if (isInsideNonSubjectPseudo(classNode)) return;
+
     const ancestorRules = findAncestorRules(ruleNode);
 
     // Weak mode only validates nesting when the author actually attempted it (there's at

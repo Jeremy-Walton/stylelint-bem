@@ -60,6 +60,8 @@ Elements and modifiers must be defined inside their block's rule via native CSS 
 - Modifiers: paired with what they modify — either a compound `&` selector directly under it (`.block { &.block--mod { } }`), or compounded directly with it in one selector (`.block.block--mod { }`). Both are equivalent: the modifier can never apply without its target. The direct-compound form needs no ancestor at all, so it's valid at the top level, even in `strict` mode.
 - Element modifiers: same two forms — `&.block__el--mod` under `.block__el` (itself nested in `.block`), or `.block__el.block__el--mod` (the element part still needs its block nesting).
 
+Classes inside the arguments of a filtering pseudo-class — `:has()`, `:not()`, `:nth-child(… of S)`, `:nth-last-child(… of S)` — are match conditions on the subject, never the element being styled, so this check ignores them entirely (e.g. `&:has(> .form-group--full-width)` is fine anywhere) and never counts them as a block definition to nest under. `:is()`/`:where()` arguments form the subject itself and are checked as normal.
+
 `@media`/`@supports` (and other at-rules) are transparent for this check — they never count as a nesting level. A modifier compound-nested directly inside a `@media` that's itself directly inside its block still satisfies "directly under"; an element inside a `@media` at any depth inside its block still satisfies "at any depth".
 
 ```css

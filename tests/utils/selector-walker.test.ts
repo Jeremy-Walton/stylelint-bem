@@ -125,7 +125,20 @@ describe('getClassNodes', () => {
 
   it('classifies a class nested inside :is() relative to its own sub-container', () => {
     expect(getClassNodes(':is(.card__title)')).toEqual([
-      { name: 'card__title', sourceIndex: 4, nestingShape: 'bare' },
+      { name: 'card__title', sourceIndex: 4, nestingShape: 'bare', enclosingPseudos: [':is'] },
     ]);
   });
+
+  it('records the enclosing pseudo of a class inside :has()', () => {
+    expect(getClassNodes('&:has(.card--featured)')).toEqual([
+      { name: 'card--featured', sourceIndex: 6, nestingShape: 'bare', enclosingPseudos: [':has'] },
+    ]);
+  });
+
+  it('records every enclosing pseudo, outermost first', () => {
+    expect(getClassNodes(':has(:is(.card__title))')).toEqual([
+      { name: 'card__title', sourceIndex: 9, nestingShape: 'bare', enclosingPseudos: [':has', ':is'] },
+    ]);
+  });
+
 });

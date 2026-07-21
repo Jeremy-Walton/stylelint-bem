@@ -80,6 +80,22 @@ testRule({
       description: 'modifier compound-nested under a block+modifier compound rule counts as directly under its block',
       code: '.card.card--dark { &.card--featured {} }',
     },
+    {
+      description: 'classes referenced inside :has() are match conditions, not definitions',
+      code: '.card { .card__title { &:has(> .form-group--full-width, > .markdown) {} } }',
+    },
+    {
+      description: 'a class referenced inside :has() at the top level is not checked',
+      code: '.card:has(.nav__item) {}',
+    },
+    {
+      description: 'a modifier referenced inside :not() is not checked',
+      code: '.card { .card__title { &:not(.card__title--large) {} } }',
+    },
+    {
+      description: 'a class referenced inside a pseudo nested within :has() is not checked',
+      code: '.card { &:has(:is(.nav__item)) {} }',
+    },
   ],
   reject: [
     {
@@ -150,6 +166,16 @@ testRule({
       description:
         'element+modifier compound at the top level — the modifier is paired, but the element still is not nested in its block',
       code: '.card {} .card__title.card__title--large {}',
+      warnings: [{ message: messages.elementNotNested('card__title', 'card') }],
+    },
+    {
+      description: 'an element styled via :is() at the top level is still a definition and still checked',
+      code: '.card {} :is(.card__title) {}',
+      warnings: [{ message: messages.elementNotNested('card__title', 'card') }],
+    },
+    {
+      description: 'a block referenced inside :has() on an ancestor does not count as the block rule',
+      code: '.nav:has(.card) { .card__title {} }',
       warnings: [{ message: messages.elementNotNested('card__title', 'card') }],
     },
     {
