@@ -19,9 +19,9 @@ const ruleName = 'plugin/stylelint-bem';
 
 const messages = stylelint.utils.ruleMessages(ruleName, {
   orphanedElement: (className: string, blockName: string) =>
-    `Expected the block ".${blockName}" to be defined in this file (required by orphaned element ".${className}")`,
+    `Expected the block ".${blockName}" to be defined in the project (required by orphaned element ".${className}")`,
   orphanedModifier: (className: string, targetName: string) =>
-    `Expected ".${targetName}" to be defined in this file (required by orphaned modifier ".${className}")`,
+    `Expected ".${targetName}" to be defined in the project (required by orphaned modifier ".${className}")`,
   invalidName: (className: string) =>
     `Expected all parts of ".${className}" to be kebab-case (lowercase letters, digits, and single dashes)`,
   doubleNestedElement: (className: string, suggested: string) =>

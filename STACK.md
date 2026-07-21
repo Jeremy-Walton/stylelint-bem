@@ -23,9 +23,9 @@ Technology choices, as decided.
 
 ## Build & tooling
 
-- **tsup or tsc** for build (to be finalized at scaffold time).
-- **GitHub Actions** CI: test + build.
-- Versioning via changesets or manual semver (to be finalized before first publish).
+- **tsup** for build — chosen at scaffold time (Phase 0) for its minimal-config ESM + `.d.ts` output.
+- **GitHub Actions** CI: test + build (`.github/workflows/ci.yml`).
+- **Manual semver** for versioning (decided 2026-07-21, Phase 4) — no changesets tooling; bump `package.json`'s version and `CHANGELOG.md` by hand at publish time.
 
 ## Distribution
 
