@@ -3,6 +3,7 @@ import type { Root } from 'postcss';
 import { buildDefinedClassIndex } from '../../utils/block-index.js';
 import { scanProjectDefinedClassesForFile } from '../../utils/project-scan.js';
 import {
+  isString,
   resolveKnownBlocks,
   resolveSeparatorOptions,
   sharedOptionsSchema,
@@ -62,7 +63,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 function isRequireNestingValue(value: unknown): value is boolean | RequireNestingMode {
-  return typeof value === 'boolean' || value === 'strict' || value === 'weak';
+  return typeof value === 'boolean' || (isString(value) && (value === 'strict' || value === 'weak'));
 }
 
 function isChecksOption(value: unknown): boolean {
@@ -77,8 +78,8 @@ function isChecksOption(value: unknown): boolean {
   });
 }
 
-function resolveRequireNestingMode(checks: Checks): RequireNestingMode {
-  return checks.requireNesting === 'weak' ? 'weak' : 'strict';
+function resolveRequireNestingMode(requireNesting: Checks['requireNesting']): RequireNestingMode {
+  return requireNesting === 'weak' ? 'weak' : 'strict';
 }
 
 const rule: stylelint.Rule<true | StylelintBemOptions> = (primary) => {
@@ -110,7 +111,7 @@ const rule: stylelint.Rule<true | StylelintBemOptions> = (primary) => {
       ignoreSelectors: options?.ignoreSelectors,
       knownBlocks: resolveKnownBlocks(options),
       definedClassIndex: new Set([...projectClasses, ...buildDefinedClassIndex(root)]),
-      requireNestingMode: resolveRequireNestingMode(checks),
+      requireNestingMode: resolveRequireNestingMode(checks.requireNesting),
       messages,
     };
 
