@@ -9,7 +9,7 @@ Technology choices, as decided.
 
 ## Core dependencies
 
-- **stylelint 16.x** — peer dependency; only 16.x is supported.
+- **stylelint 16.x or 17.x** — peer dependency. Widened from "16.x only" 2026-07-21 after a real-world run against stylelint 17.10.0 worked with no changes; not yet cross-checked against stylelint's 16→17 migration notes (see `docs/plans/PLAN.md`).
 - **postcss-selector-parser** — selector AST work (preferred over regex on raw selectors).
 - PostCSS AST (via stylelint) for walking rules and nesting structure.
 

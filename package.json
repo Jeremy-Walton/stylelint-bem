@@ -44,7 +44,7 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "stylelint": "^16.0.0"
+    "stylelint": "^16.0.0 || ^17.0.0"
   },
   "dependencies": {
     "postcss-selector-parser": "^6.1.0"
