@@ -5,6 +5,7 @@ import { findAncestorRules } from '../../utils/rule-ancestors.js';
 import { bemBaseOptionsSchema, isString, resolveSeparatorOptions } from '../../utils/rule-options.js';
 import type { BemBaseOptions } from '../../utils/rule-options.js';
 import { getClassNodes } from '../../utils/selector-walker.js';
+import type { ClassNode } from '../../utils/selector-walker.js';
 import { forEachBemClass, reportBemViolation } from '../shared/rule-context.js';
 import type { RuleContext } from '../shared/rule-context.js';
 
@@ -17,16 +18,27 @@ const messages = stylelint.utils.ruleMessages(ruleName, {
     `Expected element ".${className}" to be its own full selector, not compounded with '&'`,
   elementNotNested: (className: string, blockName: string) =>
     `Expected element ".${className}" to be nested (at any depth) inside its block ".${blockName}" via native CSS nesting`,
-  modifierNotCompound: (className: string) =>
-    `Expected modifier ".${className}" to be a compound selector with '&' (e.g. "&.${className}")`,
+  modifierNotCompound: (className: string, targetName: string) =>
+    `Expected modifier ".${className}" to be compounded with '&' (e.g. "&.${className}") or with its target (e.g. ".${targetName}.${className}")`,
   modifierNotNestedDirectly: (className: string, targetName: string) =>
     `Expected modifier ".${className}" to be nested directly inside ".${targetName}" via native CSS nesting`,
 });
 
-function ruleHasBareMatch(ruleNode: Rule, className: string): boolean {
+// A rule "defines" a class when its selector targets exactly that class — bare (`.block`) or as
+// part of a class-only compound (`.block.block--mod`); either way, everything nested inside can
+// only ever match elements that carry the class.
+function ruleDefinesClass(ruleNode: Rule, className: string): boolean {
   return ruleNode.selectors.some((selector) =>
-    getClassNodes(selector).some((node) => node.nestingShape === 'bare' && node.name === className),
+    getClassNodes(selector).some(
+      (node) =>
+        node.name === className &&
+        (node.nestingShape === 'bare' || node.nestingShape === 'class-compound'),
+    ),
   );
+}
+
+function isCompoundedWith(classNode: ClassNode, className: string): boolean {
+  return classNode.nestingShape === 'class-compound' && classNode.compoundClassNames!.includes(className);
 }
 
 function checkRequireNesting(root: Root, context: RuleContext, mode: RequireNestingMode): void {
@@ -47,13 +59,24 @@ function checkRequireNesting(root: Root, context: RuleContext, mode: RequireNest
     );
 
     if (lastSegment.separator === 'modifier') {
+      // Compounding a modifier directly with its target (.block.block--mod) pairs the two in the
+      // selector itself — equivalent to nesting &.block--mod inside it, so no ancestor is needed.
+      if (isCompoundedWith(classNode, expectedParentName)) return;
+
       if (classNode.nestingShape !== 'ampersand') {
-        reportBemViolation(context, ruleNode, classNode, messages.modifierNotCompound, classNode.name);
+        reportBemViolation(
+          context,
+          ruleNode,
+          classNode,
+          messages.modifierNotCompound,
+          classNode.name,
+          expectedParentName,
+        );
         return;
       }
 
       const parentRule = ancestorRules[0];
-      if (!parentRule || !ruleHasBareMatch(parentRule, expectedParentName)) {
+      if (!parentRule || !ruleDefinesClass(parentRule, expectedParentName)) {
         reportBemViolation(
           context,
           ruleNode,
@@ -66,12 +89,20 @@ function checkRequireNesting(root: Root, context: RuleContext, mode: RequireNest
       return;
     }
 
-    if (classNode.nestingShape !== 'bare') {
+    // An element may be compounded with its own modifiers (.block__el.block__el--mod) — the
+    // modifier check above covers those siblings; the element itself still needs block nesting.
+    const isCompoundedWithOwnModifiers =
+      classNode.nestingShape === 'class-compound' &&
+      classNode.compoundClassNames!.every((name) =>
+        name.startsWith(classNode.name + context.separatorOptions.modifierSeparator),
+      );
+
+    if (classNode.nestingShape !== 'bare' && !isCompoundedWithOwnModifiers) {
       reportBemViolation(context, ruleNode, classNode, messages.elementNotFullSelector, classNode.name);
       return;
     }
 
-    const isNested = ancestorRules.some((ancestor) => ruleHasBareMatch(ancestor, expectedParentName));
+    const isNested = ancestorRules.some((ancestor) => ruleDefinesClass(ancestor, expectedParentName));
 
     if (!isNested) {
       reportBemViolation(

@@ -40,10 +40,47 @@ describe('getClassNodes', () => {
     expect(getClassNodes('.card')).toEqual([{ name: 'card', sourceIndex: 0, nestingShape: 'bare' }]);
   });
 
-  it('reports source indices for compound class selectors', () => {
+  it('classifies a class-only compound as class-compound, listing the sibling class names', () => {
     expect(getClassNodes('.card.card--featured')).toEqual([
-      { name: 'card', sourceIndex: 0, nestingShape: 'other' },
-      { name: 'card--featured', sourceIndex: 5, nestingShape: 'other' },
+      { name: 'card', sourceIndex: 0, nestingShape: 'class-compound', compoundClassNames: ['card--featured'] },
+      { name: 'card--featured', sourceIndex: 5, nestingShape: 'class-compound', compoundClassNames: ['card'] },
+    ]);
+  });
+
+  it('lists every sibling class of a three-class compound', () => {
+    expect(getClassNodes('.card.card--featured.card--dark')).toEqual([
+      { name: 'card', sourceIndex: 0, nestingShape: 'class-compound', compoundClassNames: ['card--featured', 'card--dark'] },
+      { name: 'card--featured', sourceIndex: 5, nestingShape: 'class-compound', compoundClassNames: ['card', 'card--dark'] },
+      { name: 'card--dark', sourceIndex: 20, nestingShape: 'class-compound', compoundClassNames: ['card', 'card--featured'] },
+    ]);
+  });
+
+  it('tolerates a trailing pseudo-class on a class-compound selector', () => {
+    expect(getClassNodes('.card.card--featured:hover')).toEqual([
+      { name: 'card', sourceIndex: 0, nestingShape: 'class-compound', compoundClassNames: ['card--featured'] },
+      { name: 'card--featured', sourceIndex: 5, nestingShape: 'class-compound', compoundClassNames: ['card'] },
+    ]);
+  });
+
+  it('classifies a class compound that includes a tag as other', () => {
+    expect(getClassNodes('div.card.card--featured')).toEqual([
+      { name: 'card', sourceIndex: 3, nestingShape: 'other' },
+      { name: 'card--featured', sourceIndex: 8, nestingShape: 'other' },
+    ]);
+  });
+
+  it('classifies a class compound that includes "&" alongside other classes as other', () => {
+    expect(getClassNodes('&.card.card--featured')).toEqual([
+      { name: 'card', sourceIndex: 1, nestingShape: 'other' },
+      { name: 'card--featured', sourceIndex: 6, nestingShape: 'other' },
+    ]);
+  });
+
+  it('classifies a class compound preceded by a combinator as other', () => {
+    expect(getClassNodes('.wrapper .card.card--featured')).toEqual([
+      { name: 'wrapper', sourceIndex: 0, nestingShape: 'bare' },
+      { name: 'card', sourceIndex: 9, nestingShape: 'other' },
+      { name: 'card--featured', sourceIndex: 14, nestingShape: 'other' },
     ]);
   });
 

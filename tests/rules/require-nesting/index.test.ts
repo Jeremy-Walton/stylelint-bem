@@ -48,6 +48,38 @@ testRule({
       description: 'element-modifier compound-nested directly under its element, itself nested in its block',
       code: '.card { .card__title { &.card__title--large {} } }',
     },
+    {
+      description: 'modifier compounded directly with its block at the top level',
+      code: '.card.card--featured { align-items: center; }',
+    },
+    {
+      description: 'modifier compounded directly with its block, classes in reverse order',
+      code: '.card--featured.card {}',
+    },
+    {
+      description: 'a pseudo-class attached to a block+modifier compound does not change its shape',
+      code: '.card.card--featured:hover {}',
+    },
+    {
+      description: 'block+modifier compound nested under an unrelated ancestor — the compound itself pairs them',
+      code: '.nav { .card.card--featured {} }',
+    },
+    {
+      description: 'element compounded with its own modifier, nested in its block',
+      code: '.card { .card__title.card__title--large {} }',
+    },
+    {
+      description: 'element compounded with several of its own modifiers, nested in its block',
+      code: '.card { .card__title.card__title--large.card__title--bold {} }',
+    },
+    {
+      description: 'element nested inside a block+modifier compound rule counts as nested in its block',
+      code: '.card.card--dark { .card__title {} }',
+    },
+    {
+      description: 'modifier compound-nested under a block+modifier compound rule counts as directly under its block',
+      code: '.card.card--dark { &.card--featured {} }',
+    },
   ],
   reject: [
     {
@@ -89,7 +121,36 @@ testRule({
     {
       description: 'modifier written as a plain full selector instead of a compound "&" selector',
       code: '.card { .card--featured {} }',
-      warnings: [{ message: messages.modifierNotCompound('card--featured') }],
+      warnings: [{ message: messages.modifierNotCompound('card--featured', 'card') }],
+    },
+    {
+      description: 'modifier compounded with a class other than its target',
+      code: '.nav.card--featured {}',
+      warnings: [{ message: messages.modifierNotCompound('card--featured', 'card') }],
+    },
+    {
+      description: 'modifier compounded with a different modifier of the same block, without the block itself',
+      code: '.card--dark.card--featured {}',
+      warnings: [
+        { message: messages.modifierNotCompound('card--dark', 'card') },
+        { message: messages.modifierNotCompound('card--featured', 'card') },
+      ],
+    },
+    {
+      description: 'block+modifier compound preceded by a combinator is not a leading compound',
+      code: '.wrapper .card.card--featured {}',
+      warnings: [{ message: messages.modifierNotCompound('card--featured', 'card') }],
+    },
+    {
+      description: 'element compounded with an unrelated class',
+      code: '.card { .card__title.foo {} }',
+      warnings: [{ message: messages.elementNotFullSelector('card__title') }],
+    },
+    {
+      description:
+        'element+modifier compound at the top level — the modifier is paired, but the element still is not nested in its block',
+      code: '.card {} .card__title.card__title--large {}',
+      warnings: [{ message: messages.elementNotNested('card__title', 'card') }],
     },
     {
       description: 'modifier compound-nested under an unrelated block',
@@ -124,7 +185,7 @@ testRule({
     {
       description: 'the string "strict" behaves identically to the default/true',
       code: '.card--featured {}',
-      warnings: [{ message: messages.modifierNotCompound('card--featured') }],
+      warnings: [{ message: messages.modifierNotCompound('card--featured', 'card') }],
     },
   ],
 });
@@ -150,6 +211,10 @@ testRule({
       description: 'weak still accepts a correctly nested element (no regression)',
       code: '.card { .card__title {} }',
     },
+    {
+      description: 'weak accepts a block+modifier compound under any ancestor',
+      code: '.nav { .card.card--featured {} }',
+    },
   ],
   reject: [
     {
@@ -165,7 +230,7 @@ testRule({
     {
       description: 'weak still flags a modifier that has an ancestor but is not compound-nested',
       code: '.card { .card--featured {} }',
-      warnings: [{ message: messages.modifierNotCompound('card--featured') }],
+      warnings: [{ message: messages.modifierNotCompound('card--featured', 'card') }],
     },
     {
       description: 'weak still flags an element that has an ancestor but uses a compound "&" selector',
@@ -188,6 +253,10 @@ testRule({
       description: 'modifier compound-nested directly under its block, using custom separators',
       code: '.card { &.card_featured {} }',
     },
+    {
+      description: 'modifier compounded directly with its block, using custom separators',
+      code: '.card.card_featured {}',
+    },
   ],
   reject: [
     {
@@ -198,7 +267,7 @@ testRule({
     {
       description: 'modifier not compound-nested, using custom separators',
       code: '.card { .card_featured {} }',
-      warnings: [{ message: messages.modifierNotCompound('card_featured') }],
+      warnings: [{ message: messages.modifierNotCompound('card_featured', 'card') }],
     },
   ],
 });

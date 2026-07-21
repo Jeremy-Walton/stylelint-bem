@@ -56,9 +56,9 @@ BEM has one element level. `.block__element__other` is invalid — flatten to `.
 
 Elements and modifiers must be defined inside their block's rule via native CSS nesting, so they can't apply outside their intended block.
 
-- Elements: full selector nested (at any depth) inside the block rule — `.block { .block__el { } }`. No `&__el` concatenation shorthand.
-- Modifiers: compound `&` selector directly under what they modify — `.block { &.block--mod { } }`.
-- Element modifiers: `&.block__el--mod` under `.block__el`, which is itself nested in `.block`.
+- Elements: full selector nested (at any depth) inside the block rule — `.block { .block__el { } }`. No `&__el` concatenation shorthand. The element may carry its own modifiers in the same compound (`.block__el.block__el--mod`), and a `.block.block--mod` compound rule counts as the block rule for nesting purposes.
+- Modifiers: paired with what they modify — either a compound `&` selector directly under it (`.block { &.block--mod { } }`), or compounded directly with it in one selector (`.block.block--mod { }`). Both are equivalent: the modifier can never apply without its target. The direct-compound form needs no ancestor at all, so it's valid at the top level, even in `strict` mode.
+- Element modifiers: same two forms — `&.block__el--mod` under `.block__el` (itself nested in `.block`), or `.block__el.block__el--mod` (the element part still needs its block nesting).
 
 `@media`/`@supports` (and other at-rules) are transparent for this check — they never count as a nesting level. A modifier compound-nested directly inside a `@media` that's itself directly inside its block still satisfies "directly under"; an element inside a `@media` at any depth inside its block still satisfies "at any depth".
 
@@ -70,6 +70,9 @@ Elements and modifiers must be defined inside their block's rule via native CSS 
   }
   &.card--featured { }
 }
+
+/* valid — modifier compounded directly with its target */
+.card.card--featured { }
 
 /* invalid — element defined at top level */
 .card { }
