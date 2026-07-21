@@ -110,7 +110,13 @@ Each phase's PAUSE happens at green — reviewer adjustments become new failing 
 
 - **Read first:** `AGENTS.md` (root) → `PRODUCT.md`, `RULES.md`, `STACK.md`, `docs/bem.md` → this file. The root docs are durable and outlive this plan — behavior questions are answered by `RULES.md`, tech questions by `STACK.md`; this plan holds only sequencing, status, and decision history. If this plan conflicts with the root docs, the root docs win (and flag the conflict).
 - **Source of truth for decisions:** the table above. Do not re-interview; ask only about genuinely new ambiguities.
-- **Current status:** _Docs/planning complete (2026-07-21). Phase 0 not started._ ← update this line as phases complete (e.g. "Phase 2 complete, awaiting review", plus any review adjustments as bullet notes under the phase).
+- **Current status:** _Phase 0 complete (2026-07-21), awaiting review._ ← update this line as phases complete (e.g. "Phase 2 complete, awaiting review", plus any review adjustments as bullet notes under the phase).
+  - Build tool: **tsup** (chosen at scaffold time — ESM + `.d.ts` output with minimal config).
+  - Scaffolded: `package.json`, `tsconfig.json`, `tsup.config.ts`, `vitest.config.ts`, `.gitignore`.
+  - Shared core implemented with red→green TDD: `src/utils/bem-parser.ts` (`parseBemClassName`, `isKebabCase` — 14 tests), `src/utils/selector-walker.ts` (`getClassNames` — 8 tests), `src/utils/block-index.ts` (`buildBlockIndex` — 6 tests). All 28 tests green; `tsc --noEmit` and `npm run build` clean.
+  - `src/index.ts` (empty `Plugin[]`) and `src/configs/recommended.ts` (empty `rules: {}`) added as structural stubs only — no behavior yet, so no dedicated tests; both will gain real content as Phase 1+ rules land.
+  - `buildBlockIndex` only registers a block when a rule's selector is a **single**, non-BEM class (e.g. `.card`); compound multi-class selectors (`.card.dark`) are not indexed — a deliberately conservative default that Phase 1's orphan-rule tests may need to revisit.
+  - Not yet a git repository — no `git init` was run since it wasn't part of the Phase 0 scope; flag if you want that set up.
 - **Known quirks:** `docs/bem.md` is an external team resource — do not modify; its dead link to `ui-building-guide.md` is intentional.
 - **Workflow contract:** strict TDD per the "TDD workflow" section — tests first, confirm red, implement to green. Complete one phase, then STOP and ask Jeremy for review before starting the next. Review adjustments start as new failing tests; record them in this file, then proceed.
 - **Repo layout (once scaffolded):** `src/rules/<rule-name>/` (rule + tests), `src/utils/` (parser, walker, block index), `src/index.ts` (plugin export), `src/configs/recommended.ts`.

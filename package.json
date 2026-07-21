@@ -1,0 +1,60 @@
+{
+  "name": "stylelint-bem",
+  "version": "0.1.0",
+  "description": "A stylelint plugin that validates BEM methodology in CSS.",
+  "type": "module",
+  "author": "Jeremy Walton",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./config/recommended": {
+      "types": "./dist/configs/recommended.d.ts",
+      "import": "./dist/configs/recommended.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jeremy-walton/stylelint-bem.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jeremy-walton/stylelint-bem/issues"
+  },
+  "keywords": [
+    "CSS",
+    "Cascading Style Sheets",
+    "BEM",
+    "BEM Methodology",
+    "Clean code",
+    "Block",
+    "Element",
+    "Modifier"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "stylelint": "^16.0.0"
+  },
+  "dependencies": {
+    "postcss-selector-parser": "^6.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "postcss": "^8.4.0",
+    "stylelint": "^16.9.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
