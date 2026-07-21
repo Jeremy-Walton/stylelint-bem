@@ -54,11 +54,11 @@ BEM has one element level. `.block__element__other` is invalid — flatten to `.
 
 ## `stylelint-bem/require-nesting`
 
-Elements and modifiers must be defined inside their block's rule via native CSS nesting, so they can't apply outside their intended block.
+Elements and modifiers must be defined via native CSS nesting rather than written flat, and modifiers must always be paired with what they modify.
 
-- Elements: full selector nested (at any depth) inside the block rule — `.block { .block__el { } }`. No `&__el` concatenation shorthand. The element may carry its own modifiers in the same compound (`.block__el.block__el--mod`), and a `.block.block--mod` compound rule counts as the block rule for nesting purposes.
-- Modifiers: paired with what they modify — either a compound `&` selector directly under it (`.block { &.block--mod { } }`), or compounded directly with it in one selector (`.block.block--mod { }`). Both are equivalent: the modifier can never apply without its target. The direct-compound form needs no ancestor at all, so it's valid at the top level, even in `strict` mode.
-- Element modifiers: same two forms — `&.block__el--mod` under `.block__el` (itself nested in `.block`), or `.block__el.block__el--mod` (the element part still needs its block nesting).
+- Elements: full selector nested via native CSS nesting — never written flat at the top level. In `strict` mode the element must be nested (at any depth) inside its own block's rule — `.block { .block__el { } }`; a `.block.block--mod` compound rule counts as the block rule. In `weak` mode any ancestor rule counts (see Strictness below). No `&__el` concatenation shorthand, and no compound `&` shape. The element may carry its own modifiers in the same compound (`.block__el.block__el--mod`).
+- Modifiers: paired with what they modify — either a compound `&` selector directly under it (`.block { &.block--mod { } }`), or compounded directly with it in one selector (`.block.block--mod { }`). Both are equivalent: the modifier can never apply without its target. The direct-compound form needs no ancestor at all, so it's valid at the top level, even in `strict` mode. A `.block.block--mod` compound rule counts as the target's rule for the `&` form.
+- Element modifiers: same two forms — `&.block__el--mod` under `.block__el`, or `.block__el.block__el--mod` (the element part still needs to be nested somewhere itself).
 
 Classes inside the arguments of a filtering pseudo-class — `:has()`, `:not()`, `:nth-child(… of S)`, `:nth-last-child(… of S)` — are match conditions on the subject, never the element being styled, so this check ignores them entirely (e.g. `&:has(> .form-group--full-width)` is fine anywhere) and never counts them as a block definition to nest under. `:is()`/`:where()` arguments form the subject itself and are checked as normal.
 
@@ -76,7 +76,7 @@ Classes inside the arguments of a filtering pseudo-class — `:has()`, `:not()`,
 /* valid — modifier compounded directly with its target */
 .card.card--featured { }
 
-/* invalid — element defined at top level */
+/* invalid — element defined at top level (both modes) */
 .card { }
 .card__title { }
 ```
@@ -97,7 +97,21 @@ By construction, `requireNesting` can only ever validate nesting within the *cur
 .btn--jumbo { }
 ```
 
-Under `strict`, `.btn--jumbo` is flagged (`.btn` isn't nested in *this* file, so there's nothing to compound `&` against). **`weak`** mode only validates nesting when it's actually attempted — a class with no ancestor rule at all is left unchecked, which allows the pattern above while still catching genuine mistakes (a class nested under the *wrong* ancestor, or nested but with the wrong shape, is still flagged either way). **`false`** disables the check entirely.
+Under `strict`, `.btn--jumbo` is flagged (`.btn` isn't nested in *this* file, so there's nothing to compound `&` against — though `.btn.btn--jumbo { }` would satisfy it). **`weak`** relaxes two things:
+
+- A *modifier* with no ancestor rule at all is left unchecked, allowing the flat pattern above.
+- An *element* may be nested inside **any** rule, not just its own block — customizing another component's element from within a different component is deliberate scoping:
+
+```css
+/* valid in weak, flagged by strict */
+.panel {
+  .panel__header {
+    .accordion__marker { }
+  }
+}
+```
+
+A flat element nested in nothing at all is flagged in **both** modes, and genuine mistakes (a modifier `&`-compounded under the wrong ancestor, or a class nested with the wrong shape) are still flagged either way. **`false`** disables the check entirely.
 
 ```json
 {

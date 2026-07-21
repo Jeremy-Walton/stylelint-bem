@@ -104,8 +104,18 @@ testRule({
       warnings: [{ message: messages.elementNotNested('card__title', 'card') }],
     },
     {
-      description: 'element nested under an unrelated block',
+      description: 'element nested under an unrelated block — strict requires the block itself',
       code: '.nav { .card__title {} }',
+      warnings: [{ message: messages.elementNotNested('card__title', 'card') }],
+    },
+    {
+      description: "strict flags another block's element customized from within a component tree",
+      code: '.panel { .panel__header { .accordion__marker {} } }',
+      warnings: [{ message: messages.elementNotNested('accordion__marker', 'accordion') }],
+    },
+    {
+      description: 'a block referenced inside :has() on an ancestor does not count as the block rule',
+      code: '.nav:has(.card) { .card__title {} }',
       warnings: [{ message: messages.elementNotNested('card__title', 'card') }],
     },
     {
@@ -124,15 +134,23 @@ testRule({
       warnings: [{ message: messages.elementNotFullSelector('card__title') }],
     },
     {
-      description: 'each mismatched element in a selector list is reported separately',
-      code: '.card { .card__title, .nav__title {} }',
-      warnings: [{ message: messages.elementNotNested('nav__title', 'nav') }],
+      description: 'each un-nested element in a selector list is reported separately',
+      code: '.card__title, .nav__title {}',
+      warnings: [
+        { message: messages.elementNotNested('card__title', 'card') },
+        { message: messages.elementNotNested('nav__title', 'nav') },
+      ],
     },
     {
       description:
         'an element-modifier is fine on its own — the violation is isolated to the element it is nested under',
       code: '.card__title { &.card__title--large {} } .card {}',
       warnings: [{ message: messages.elementNotNested('card__title', 'card') }],
+    },
+    {
+      description: "an element nested under another component still can't use the compound '&' shape",
+      code: '.nav { &.card__title {} }',
+      warnings: [{ message: messages.elementNotFullSelector('card__title') }],
     },
     {
       description: 'modifier written as a plain full selector instead of a compound "&" selector',
@@ -174,9 +192,9 @@ testRule({
       warnings: [{ message: messages.elementNotNested('card__title', 'card') }],
     },
     {
-      description: 'a block referenced inside :has() on an ancestor does not count as the block rule',
-      code: '.nav:has(.card) { .card__title {} }',
-      warnings: [{ message: messages.elementNotNested('card__title', 'card') }],
+      description: "a block referenced inside :has() on an ancestor does not count as a modifier's target",
+      code: '.nav:has(.card) { &.card--featured {} }',
+      warnings: [{ message: messages.modifierNotNestedDirectly('card--featured', 'card') }],
     },
     {
       description: 'modifier compound-nested under an unrelated block',
@@ -226,10 +244,6 @@ testRule({
       code: '.card--featured {}',
     },
     {
-      description: 'weak allows an element written flat, with no ancestor at all',
-      code: '.card__title {}',
-    },
-    {
       description: 'weak still accepts a correctly compound-nested modifier (no regression)',
       code: '.card { &.card--featured {} }',
     },
@@ -241,17 +255,25 @@ testRule({
       description: 'weak accepts a block+modifier compound under any ancestor',
       code: '.nav { .card.card--featured {} }',
     },
+    {
+      description: "weak accepts an element nested under a different component's rule",
+      code: '.nav { .card__title {} }',
+    },
+    {
+      description: "weak accepts another block's element customized from within a component tree",
+      code: '.panel { .panel__header { .accordion__marker {} } }',
+    },
   ],
   reject: [
+    {
+      description: 'weak still flags an element written flat, with no ancestor at all',
+      code: '.card__title {}',
+      warnings: [{ message: messages.elementNotNestedAnywhere('card__title', 'card') }],
+    },
     {
       description: 'weak still flags a modifier nested under the wrong ancestor',
       code: '.nav { &.card--featured {} }',
       warnings: [{ message: messages.modifierNotNestedDirectly('card--featured', 'card') }],
-    },
-    {
-      description: 'weak still flags an element nested under the wrong ancestor',
-      code: '.nav { .card__title {} }',
-      warnings: [{ message: messages.elementNotNested('card__title', 'card') }],
     },
     {
       description: 'weak still flags a modifier that has an ancestor but is not compound-nested',

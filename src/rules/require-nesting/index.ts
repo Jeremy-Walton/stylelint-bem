@@ -18,6 +18,8 @@ const messages = stylelint.utils.ruleMessages(ruleName, {
     `Expected element ".${className}" to be its own full selector, not compounded with '&'`,
   elementNotNested: (className: string, blockName: string) =>
     `Expected element ".${className}" to be nested (at any depth) inside its block ".${blockName}" via native CSS nesting`,
+  elementNotNestedAnywhere: (className: string, blockName: string) =>
+    `Expected element ".${className}" to be nested inside a rule via native CSS nesting (e.g. inside its block ".${blockName}")`,
   modifierNotCompound: (className: string, targetName: string) =>
     `Expected modifier ".${className}" to be compounded with '&' (e.g. "&.${className}") or with its target (e.g. ".${targetName}.${className}")`,
   modifierNotNestedDirectly: (className: string, targetName: string) =>
@@ -58,13 +60,6 @@ function checkRequireNesting(root: Root, context: RuleContext, mode: RequireNest
     if (isInsideNonSubjectPseudo(classNode)) return;
 
     const ancestorRules = findAncestorRules(ruleNode);
-
-    // Weak mode only validates nesting when the author actually attempted it (there's at
-    // least one ancestor rule). A class with no ancestor at all is left unchecked — the
-    // common case being a page/feature file adding a modifier or element onto a block that's
-    // defined (and nested) in a different, shared file, which strict mode can never satisfy.
-    if (mode === 'weak' && ancestorRules.length === 0) return;
-
     const lastSegment = parsed.segments[parsed.segments.length - 1]!;
     const expectedParentName = formatClassName(
       parsed.block,
@@ -76,6 +71,11 @@ function checkRequireNesting(root: Root, context: RuleContext, mode: RequireNest
       // Compounding a modifier directly with its target (.block.block--mod) pairs the two in the
       // selector itself — equivalent to nesting &.block--mod inside it, so no ancestor is needed.
       if (isCompoundedWith(classNode, expectedParentName)) return;
+
+      // Weak mode leaves a modifier with no ancestor at all unchecked — the common case being a
+      // page/feature file adding a modifier onto a block that's defined (and nested) in a
+      // different, shared file, which strict mode can never satisfy.
+      if (mode === 'weak' && ancestorRules.length === 0) return;
 
       if (classNode.nestingShape !== 'ampersand') {
         reportBemViolation(
@@ -113,6 +113,23 @@ function checkRequireNesting(root: Root, context: RuleContext, mode: RequireNest
 
     if (classNode.nestingShape !== 'bare' && !isCompoundedWithOwnModifiers) {
       reportBemViolation(context, ruleNode, classNode, messages.elementNotFullSelector, classNode.name);
+      return;
+    }
+
+    // Strict requires the element nested (at any depth) inside its own block's rule. Weak
+    // accepts any ancestor — nesting under a different component's rule is deliberate scoping
+    // (customizing this element from within that component) — but never a flat element.
+    if (mode === 'weak') {
+      if (ancestorRules.length === 0) {
+        reportBemViolation(
+          context,
+          ruleNode,
+          classNode,
+          messages.elementNotNestedAnywhere,
+          classNode.name,
+          expectedParentName,
+        );
+      }
       return;
     }
 
