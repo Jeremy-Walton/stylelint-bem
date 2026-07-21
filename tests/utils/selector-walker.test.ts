@@ -37,27 +37,58 @@ describe('getClassNames', () => {
 
 describe('getClassNodes', () => {
   it('reports the source index of a single class', () => {
-    expect(getClassNodes('.card')).toEqual([{ name: 'card', sourceIndex: 0 }]);
+    expect(getClassNodes('.card')).toEqual([{ name: 'card', sourceIndex: 0, nestingShape: 'bare' }]);
   });
 
   it('reports source indices for compound class selectors', () => {
     expect(getClassNodes('.card.card--featured')).toEqual([
-      { name: 'card', sourceIndex: 0 },
-      { name: 'card--featured', sourceIndex: 5 },
+      { name: 'card', sourceIndex: 0, nestingShape: 'other' },
+      { name: 'card--featured', sourceIndex: 5, nestingShape: 'other' },
     ]);
   });
 
   it('reports source indices across combinators', () => {
     expect(getClassNodes('.card > .card__title')).toEqual([
-      { name: 'card', sourceIndex: 0 },
-      { name: 'card__title', sourceIndex: 8 },
+      { name: 'card', sourceIndex: 0, nestingShape: 'bare' },
+      { name: 'card__title', sourceIndex: 8, nestingShape: 'other' },
     ]);
   });
 
   it('reports source indices per selector in a selector list', () => {
     expect(getClassNodes('.card__title, .card__body')).toEqual([
-      { name: 'card__title', sourceIndex: 0 },
-      { name: 'card__body', sourceIndex: 14 },
+      { name: 'card__title', sourceIndex: 0, nestingShape: 'bare' },
+      { name: 'card__body', sourceIndex: 14, nestingShape: 'bare' },
+    ]);
+  });
+
+  it('classifies a class compounded with the nesting selector "&" as ampersand', () => {
+    expect(getClassNodes('&.card--featured')).toEqual([
+      { name: 'card--featured', sourceIndex: 1, nestingShape: 'ampersand' },
+    ]);
+  });
+
+  it('tolerates a trailing pseudo-class on a bare selector', () => {
+    expect(getClassNodes('.card__title:hover')).toEqual([
+      { name: 'card__title', sourceIndex: 0, nestingShape: 'bare' },
+    ]);
+  });
+
+  it('tolerates a trailing pseudo-class on an ampersand-compound selector', () => {
+    expect(getClassNodes('&.card--featured:hover')).toEqual([
+      { name: 'card--featured', sourceIndex: 1, nestingShape: 'ampersand' },
+    ]);
+  });
+
+  it('classifies a class preceded by a descendant combinator as other', () => {
+    expect(getClassNodes('.wrapper .card__title')).toEqual([
+      { name: 'wrapper', sourceIndex: 0, nestingShape: 'bare' },
+      { name: 'card__title', sourceIndex: 9, nestingShape: 'other' },
+    ]);
+  });
+
+  it('classifies a class nested inside :is() relative to its own sub-container', () => {
+    expect(getClassNodes(':is(.card__title)')).toEqual([
+      { name: 'card__title', sourceIndex: 4, nestingShape: 'bare' },
     ]);
   });
 });

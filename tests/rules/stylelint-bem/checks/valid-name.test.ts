@@ -4,7 +4,7 @@ import plugin, { messages, ruleName } from '@src/rules/stylelint-bem/index.js';
 testRule({
   plugin,
   ruleName,
-  config: { checks: { noOrphanedElement: false, noOrphanedModifier: false } },
+  config: { checks: { noOrphanedElement: false, noOrphanedModifier: false, requireNesting: false } },
   accept: [
     {
       description: 'kebab-case block, element, and modifier',
@@ -42,7 +42,7 @@ testRule({
   plugin,
   ruleName,
   config: {
-    checks: { noOrphanedElement: false, noOrphanedModifier: false },
+    checks: { noOrphanedElement: false, noOrphanedModifier: false, requireNesting: false },
     elementSeparator: '-',
   },
   accept: [

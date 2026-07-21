@@ -17,7 +17,7 @@ describe('recommended config', () => {
     });
 
     const warnings = result.results[0]!.warnings;
-    expect(warnings).toHaveLength(2);
+    expect(warnings).toHaveLength(4);
     expect(warnings.every((warning) => warning.rule === ruleName)).toBe(true);
   });
 

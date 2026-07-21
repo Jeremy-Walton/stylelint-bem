@@ -23,6 +23,6 @@ describe('plugin entry', () => {
     });
 
     const rulesReported = result.results[0]!.warnings.map((warning) => warning.rule);
-    expect(rulesReported).toEqual([ruleName]);
+    expect(rulesReported).toEqual([ruleName, ruleName]);
   });
 });

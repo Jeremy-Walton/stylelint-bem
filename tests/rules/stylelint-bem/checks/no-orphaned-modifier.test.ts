@@ -4,7 +4,7 @@ import plugin, { messages, ruleName } from '@src/rules/stylelint-bem/index.js';
 testRule({
   plugin,
   ruleName,
-  config: { checks: { noOrphanedElement: false, noDoubleNestedElement: false } },
+  config: { checks: { noOrphanedElement: false, noDoubleNestedElement: false, requireNesting: false } },
   accept: [
     {
       description: 'block and modifier defined as separate top-level rules',
@@ -59,7 +59,10 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: { checks: { noOrphanedElement: false }, ignoreSelectors: ['.foo--bar'] },
+  config: {
+    checks: { noOrphanedElement: false, requireNesting: false },
+    ignoreSelectors: ['.foo--bar'],
+  },
   accept: [
     {
       description: 'orphaned modifier matching an ignored selector is not flagged',
@@ -71,7 +74,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: { checks: { noOrphanedElement: false }, modifierSeparator: '_' },
+  config: { checks: { noOrphanedElement: false, requireNesting: false }, modifierSeparator: '_' },
   accept: [
     {
       description: 'block and modifier defined using a custom modifier separator',
@@ -90,7 +93,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: { checks: { noOrphanedElement: false }, knownBlocks: ['card'] },
+  config: { checks: { noOrphanedElement: false, requireNesting: false }, knownBlocks: ['card'] },
   accept: [
     {
       description: 'a modifier of a knownBlocks entry is never flagged, even though .card is never defined',

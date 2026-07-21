@@ -9,7 +9,7 @@ import plugin, { messages, ruleName } from '@src/rules/stylelint-bem/index.js';
 testRule({
   plugin,
   ruleName,
-  config: true,
+  config: { checks: { requireNesting: false } },
   reject: [
     {
       description: 'both checks run by default and report independently',
@@ -25,7 +25,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: { checks: { noOrphanedElement: false } },
+  config: { checks: { noOrphanedElement: false, requireNesting: false } },
   accept: [
     {
       description: 'disabling noOrphanedElement silences only that check',
@@ -44,7 +44,7 @@ testRule({
 testRule({
   plugin,
   ruleName,
-  config: { checks: { noOrphanedModifier: false } },
+  config: { checks: { noOrphanedModifier: false, requireNesting: false } },
   accept: [
     {
       description: 'disabling noOrphanedModifier silences only that check',
@@ -64,7 +64,7 @@ describe(ruleName, () => {
   it('reports exactly one warning when the block exists but the modified element does not', async () => {
     const result = await stylelint.lint({
       code: '.card {} .card__title--large {}',
-      config: { plugins: [plugin], rules: { [ruleName]: true } },
+      config: { plugins: [plugin], rules: { [ruleName]: { checks: { requireNesting: false } } } },
     });
 
     const warnings = result.results[0]!.warnings;
@@ -128,7 +128,7 @@ describe(`${ruleName} — project-wide orphan scope`, () => {
 
     const result = await stylelint.lint({
       files: [pagePath],
-      config: { plugins: [plugin], rules: { [ruleName]: true } },
+      config: { plugins: [plugin], rules: { [ruleName]: { checks: { requireNesting: false } } } },
     });
 
     expect(result.results[0]!.warnings).toEqual([]);
@@ -141,7 +141,7 @@ describe(`${ruleName} — project-wide orphan scope`, () => {
 
     const result = await stylelint.lint({
       files: [pagePath],
-      config: { plugins: [plugin], rules: { [ruleName]: true } },
+      config: { plugins: [plugin], rules: { [ruleName]: { checks: { requireNesting: false } } } },
     });
 
     expect(result.results[0]!.warnings).toHaveLength(1);
@@ -162,7 +162,7 @@ describe(`${ruleName} — project-wide orphan scope`, () => {
     const result = await stylelint.lint({
       code: '.card__title {}',
       codeFilename: pagePath,
-      config: { plugins: [plugin], rules: { [ruleName]: true } },
+      config: { plugins: [plugin], rules: { [ruleName]: { checks: { requireNesting: false } } } },
     });
 
     expect(result.results[0]!.warnings).toEqual([]);
@@ -171,7 +171,7 @@ describe(`${ruleName} — project-wide orphan scope`, () => {
   it('falls back to same-file-only behavior when there is no file path (a raw code string)', async () => {
     const result = await stylelint.lint({
       code: '.card__title {}',
-      config: { plugins: [plugin], rules: { [ruleName]: true } },
+      config: { plugins: [plugin], rules: { [ruleName]: { checks: { requireNesting: false } } } },
     });
 
     expect(result.results[0]!.warnings).toHaveLength(1);

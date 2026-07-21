@@ -4,7 +4,9 @@ import plugin, { messages, ruleName } from '@src/rules/stylelint-bem/index.js';
 testRule({
   plugin,
   ruleName,
-  config: { checks: { noOrphanedElement: false, noOrphanedModifier: false, validName: false } },
+  config: {
+    checks: { noOrphanedElement: false, noOrphanedModifier: false, validName: false, requireNesting: false },
+  },
   accept: [
     {
       description: 'a single element level',
@@ -49,7 +51,7 @@ testRule({
   plugin,
   ruleName,
   config: {
-    checks: { noOrphanedElement: false, noOrphanedModifier: false },
+    checks: { noOrphanedElement: false, noOrphanedModifier: false, requireNesting: false },
     elementSeparator: '-',
     modifierSeparator: '_',
   },

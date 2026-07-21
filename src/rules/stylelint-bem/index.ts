@@ -12,6 +12,7 @@ import type { CheckContext } from './check-context.js';
 import { checkNoDoubleNestedElement } from './checks/no-double-nested-element.js';
 import { checkNoOrphanedElement } from './checks/no-orphaned-element.js';
 import { checkNoOrphanedModifier } from './checks/no-orphaned-modifier.js';
+import { checkRequireNesting } from './checks/require-nesting.js';
 import { checkValidName } from './checks/valid-name.js';
 
 const ruleName = 'plugin/stylelint-bem';
@@ -27,6 +28,14 @@ const messages = stylelint.utils.ruleMessages(ruleName, {
     `BEM allows only one element level — flatten ".${className}" to ".${suggested}"`,
   elementAfterModifier: (className: string) =>
     `".${className}" is invalid — a modifier cannot be followed by an element`,
+  elementNotFullSelector: (className: string) =>
+    `Expected element ".${className}" to be its own full selector, not compounded with '&'`,
+  elementNotNested: (className: string, blockName: string) =>
+    `Expected element ".${className}" to be nested (at any depth) inside its block ".${blockName}" via native CSS nesting`,
+  modifierNotCompound: (className: string) =>
+    `Expected modifier ".${className}" to be a compound selector with '&' (e.g. "&.${className}")`,
+  modifierNotNestedDirectly: (className: string, targetName: string) =>
+    `Expected modifier ".${className}" to be nested directly inside ".${targetName}" via native CSS nesting`,
 });
 
 type CheckRunner = (root: Root, context: CheckContext) => void;
@@ -36,6 +45,7 @@ const CHECK_DEFINITIONS = {
   noOrphanedModifier: checkNoOrphanedModifier,
   validName: checkValidName,
   noDoubleNestedElement: checkNoDoubleNestedElement,
+  requireNesting: checkRequireNesting,
 } satisfies Record<string, CheckRunner>;
 const CHECK_NAMES = Object.keys(CHECK_DEFINITIONS) as (keyof typeof CHECK_DEFINITIONS)[];
 type CheckName = (typeof CHECK_NAMES)[number];
