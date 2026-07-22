@@ -17,7 +17,7 @@ interface RuleContext {
   messages: Record<string, RuleMessage>;
 }
 
-function forEachBemClass(
+function forEachClass(
   root: Root,
   context: RuleContext,
   visit: (ruleNode: Rule, classNode: ClassNode, parsed: ParsedBemClassName) => void,
@@ -37,11 +37,19 @@ function forEachBemClass(
 
       for (const classNode of getClassNodes(selector)) {
         const parsed = parseClassName(classNode.name, context.separatorOptions);
-        if (!parsed.isBem) continue;
-
         visit(ruleNode, { ...classNode, sourceIndex: offset + classNode.sourceIndex }, parsed);
       }
     }
+  });
+}
+
+function forEachBemClass(
+  root: Root,
+  context: RuleContext,
+  visit: (ruleNode: Rule, classNode: ClassNode, parsed: ParsedBemClassName) => void,
+): void {
+  forEachClass(root, context, (ruleNode, classNode, parsed) => {
+    if (parsed.isBem) visit(ruleNode, classNode, parsed);
   });
 }
 
@@ -95,4 +103,4 @@ function validateBemOptions(
 }
 
 export type { RuleContext };
-export { forEachBemClass, reportBemViolation, isDefinedOrKnown, validateBemOptions };
+export { forEachClass, forEachBemClass, reportBemViolation, isDefinedOrKnown, validateBemOptions };

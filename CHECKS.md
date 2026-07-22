@@ -19,7 +19,7 @@ Every part (block, element, modifier) of a BEM class must be kebab-case: lowerca
 
 ## `stylelint-bem/no-orphaned-element`
 
-`.block__thing` is only valid if `.block` is defined somewhere in the project — the current file, or any other `.css`/`.scss` file under the project root (the nearest directory containing a `package.json`, walking up from the linted file; `node_modules` and symlinks are never scanned). If no `package.json` is found anywhere above the linted file, the check falls back to same-file-only (it never errors, and never scans from some other guessed root). A block name listed in `knownBlocks` is always treated as defined, for classes that come from a third-party dependency and are never defined in any project CSS/SCSS file.
+`.block__thing` is only valid if `.block` is defined somewhere in the project — the current file, or any other `.css`/`.scss` file under the project root (the nearest directory containing a `package.json`, walking up from the linted file; `node_modules`, `vendor` directories, and symlinks are never scanned). If no `package.json` is found anywhere above the linted file, the check falls back to same-file-only (it never errors, and never scans from some other guessed root). A block name listed in `knownBlocks` is always treated as defined, for classes that come from a third-party dependency and are never defined in any project CSS/SCSS file.
 
 ```css
 /* invalid — .card is never defined anywhere in the project */
@@ -117,22 +117,10 @@ A tag, id, or universal selector compounded alongside a class — e.g. a custom 
 
 Unlike the other rules, `stylelint-bem/require-nesting`'s primary option takes more than a boolean — it accepts `true` (equivalent to `"strict"`), `"strict"`, or `"weak"`. (To disable the rule entirely, omit it from your config or set it to `false` at the top level, same as any stylelint rule.)
 
-By construction, `requireNesting` can only ever validate nesting within the *current file's* AST — it has no way to confirm nesting against a block defined in a different file, even though that block is a legitimate, fully-defined part of the project (see `noOrphanedElement`). This makes **`strict`** mode (the default) incompatible with a common, legitimate pattern: a shared component's block lives in one file, and a page/feature file customizes it with a modifier or element written flat, without re-declaring the block's nesting:
+By construction, `requireNesting` can only ever validate nesting within the *current file's* AST — it has no way to confirm nesting against a block defined in a different file, even though that block is a legitimate, fully-defined part of the project (see `noOrphanedElement`). The two modes only differ in what counts as valid nesting for an **element**:
 
-```css
-/* shared/button.css */
-.btn {
-  &.btn--large { }
-}
-
-/* pages/dashboard.css — customizing .btn from a different file */
-.btn--jumbo { }
-```
-
-Under `strict`, `.btn--jumbo` is flagged (`.btn` isn't nested in *this* file, so there's nothing to compound `&` against — though `.btn.btn--jumbo { }` would satisfy it). **`weak`** relaxes two things:
-
-- A *modifier* with no ancestor rule at all is left unchecked, allowing the flat pattern above.
-- An *element* may be nested inside **any** rule, not just its own block — customizing another component's element from within a different component is deliberate scoping:
+- **`strict`** (the default): the element must be nested (at any depth) inside its **own block's** rule.
+- **`weak`**: the element may be nested inside **any** rule, not just its own block — customizing another component's element from within a different component is deliberate scoping:
 
 ```css
 /* valid in weak, flagged by strict */
@@ -143,7 +131,22 @@ Under `strict`, `.btn--jumbo` is flagged (`.btn` isn't nested in *this* file, so
 }
 ```
 
-A flat element nested in nothing at all is flagged in **both** modes, and genuine mistakes (a modifier `&`-compounded under the wrong ancestor, or a class nested with the wrong shape) are still flagged either way. **`false`** disables the check entirely.
+A flat element nested in nothing at all is flagged in **both** modes.
+
+A **modifier**'s compounding requirement never relaxes between modes — it must always be either compounded directly with its target (`.block.block--mod { }`, valid with no ancestor at all, in both modes) or nested via `&` directly under the rule that defines its exact target. A shared component's block living in one file, customized with a flat modifier from a different page/feature file, is **not** a supported pattern — `requireNesting` can't confirm the block is nested correctly in that other file, so it has no basis to accept the modifier on faith:
+
+```css
+/* shared/button.css */
+.btn {
+  &.btn--large { }
+}
+
+/* pages/dashboard.css — customizing .btn from a different file */
+.btn--jumbo { }        /* flagged in both modes — .btn isn't nested in *this* file */
+.btn.btn--jumbo { }    /* valid in both modes — compounded directly, no ancestor needed */
+```
+
+Genuine mistakes (a modifier `&`-compounded under the wrong ancestor, or a class nested with the wrong shape) are still flagged either way. **`false`** disables the check entirely.
 
 ```json
 {

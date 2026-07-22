@@ -20,6 +20,10 @@ testRule({
       code: '.card { &.card--featured {} }',
     },
     {
+      description: 'modifier defined on its block',
+      code: '.card.card--featured {}',
+    },
+    {
       description: 'non-BEM class (no separators) is never checked',
       code: '.foo {}',
     },

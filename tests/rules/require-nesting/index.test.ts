@@ -521,8 +521,8 @@ testRule({
   config: 'weak',
   accept: [
     {
-      description: 'weak allows a modifier written flat, with no ancestor at all',
-      code: '.card--featured {}',
+      description: 'weak still accepts a modifier compounded directly with its target, with no ancestor at all',
+      code: '.card.card--featured {}',
     },
     {
       description: 'weak still accepts a correctly compound-nested modifier (no regression)',
@@ -555,6 +555,11 @@ testRule({
   ],
   reject: [
     {
+      description: 'weak flags a modifier written flat, with no ancestor at all (matches strict — no cross-file exemption)',
+      code: '.card--featured {}',
+      warnings: [{ message: messages.modifierNotCompound('card--featured', 'card') }],
+    },
+    {
       description: 'weak still flags an element written flat, with no ancestor at all',
       code: '.card__title {}',
       warnings: [{ message: messages.elementNotNestedAnywhere('card__title', 'card') }],
@@ -562,7 +567,10 @@ testRule({
     {
       description: 'weak still flags an ampersand-chained element with no real ancestor rule at all',
       code: '&.card--featured .card__title {}',
-      warnings: [{ message: messages.elementNotNestedAnywhere('card__title', 'card') }],
+      warnings: [
+        { message: messages.modifierNotNestedDirectly('card--featured', 'card') },
+        { message: messages.elementNotNestedAnywhere('card__title', 'card') },
+      ],
     },
     {
       description: "weak still flags a chained element whose root doesn't name its expected block",

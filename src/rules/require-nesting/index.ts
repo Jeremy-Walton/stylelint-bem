@@ -167,10 +167,6 @@ function checkRequireNesting(root: Root, context: RuleContext, mode: RequireNest
       // equivalent to nesting &.block--mod inside it.
       if (isCompoundedWith(classNode, expectedParentName)) return;
 
-      // Weak mode leaves an ancestor-less modifier unchecked — typically a page file adding a
-      // modifier onto a block defined (and nested) elsewhere, which strict mode could never satisfy.
-      if (mode === 'weak' && ancestorRules.length === 0) return;
-
       if (
         classNode.nestingShape !== 'ampersand' ||
         !isSameBlockCompound(classNode, context.separatorOptions)

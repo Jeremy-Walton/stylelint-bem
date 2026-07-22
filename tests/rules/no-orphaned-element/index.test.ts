@@ -29,7 +29,7 @@ testRule({
     },
     {
       description:
-        'the exact reported case: block and element defined together via a block-literal chain (a flat descendant combinator), not a separate block rule',
+        'flat descendant combinator, not a separate block rule',
       code: '.card .card__title {}',
     },
     {

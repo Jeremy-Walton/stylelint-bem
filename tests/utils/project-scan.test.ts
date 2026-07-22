@@ -72,6 +72,17 @@ describe('scanProjectDefinedClasses', () => {
     expect(classes).toEqual(new Set(['app']));
   });
 
+  it('excludes vendor directories (e.g. a Ruby gem vendored under vendor/bundle)', async () => {
+    const root = await makeTmpDir();
+    await fs.mkdir(path.join(root, 'vendor', 'bundle', 'some-gem'), { recursive: true });
+    await fs.writeFile(path.join(root, 'vendor', 'bundle', 'some-gem', 'gem.css'), '.block {}');
+    await fs.writeFile(path.join(root, 'app.css'), '.app {}');
+
+    const classes = await scanProjectDefinedClasses(root);
+
+    expect(classes).toEqual(new Set(['app']));
+  });
+
   it('does not follow symlinked directories', async () => {
     const root = await makeTmpDir();
     const outsideDir = await makeTmpDir();

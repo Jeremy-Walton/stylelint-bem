@@ -36,7 +36,7 @@ async function performScan(projectRoot: string): Promise<Set<string>> {
   const files = await fg('**/*.{css,scss}', {
     cwd: projectRoot,
     absolute: true,
-    ignore: ['**/node_modules/**'],
+    ignore: ['**/node_modules/**', '**/vendor/**'],
     followSymbolicLinks: false,
   });
 
