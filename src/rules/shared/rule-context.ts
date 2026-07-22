@@ -23,14 +23,29 @@ function forEachBemClass(
   visit: (ruleNode: Rule, classNode: ClassNode, parsed: ParsedBemClassName) => void,
 ): void {
   root.walkRules((ruleNode) => {
+    // ruleNode.selectors are the comma-split, individually trimmed pieces of the rule's own raw
+    // selector text — trimming only strips leading/trailing whitespace, so each piece is still a
+    // literal substring of it. getClassNodes(selector) reports sourceIndex relative to that one
+    // piece alone (reset to 0 per selector), but a reported warning's index is interpreted
+    // relative to the whole rule's selector text — so for every selector after the first in a
+    // list, the raw sourceIndex would point at the wrong character entirely. Locating each piece's
+    // true offset (searching forward so a repeated selector text resolves to its own occurrence)
+    // and adding it back in keeps every reported position correct, however many selectors precede
+    // the one being reported on.
+    let searchIndex = 0;
+
     for (const selector of ruleNode.selectors) {
+      const selectorStart = ruleNode.selector.indexOf(selector, searchIndex);
+      const offset = selectorStart === -1 ? 0 : selectorStart;
+      searchIndex = offset + selector.length;
+
       if (isIgnoredSelector(selector, context.ignoreSelectors)) continue;
 
       for (const classNode of getClassNodes(selector)) {
         const parsed = parseClassName(classNode.name, context.separatorOptions);
         if (!parsed.isBem) continue;
 
-        visit(ruleNode, classNode, parsed);
+        visit(ruleNode, { ...classNode, sourceIndex: offset + classNode.sourceIndex }, parsed);
       }
     }
   });

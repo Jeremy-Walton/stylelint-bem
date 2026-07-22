@@ -34,9 +34,14 @@ describe('buildBlockIndex', () => {
     expect(buildBlockIndex(root, defaultOptions)).toEqual(new Set(['card']));
   });
 
-  it('does not index a compound multi-class selector as a block', () => {
+  it('indexes every class of a compound multi-class selector as a block — each is genuinely styled by this rule', () => {
     const root = parse('.card.dark {}');
-    expect(buildBlockIndex(root, defaultOptions)).toEqual(new Set());
+    expect(buildBlockIndex(root, defaultOptions)).toEqual(new Set(['card', 'dark']));
+  });
+
+  it('indexes the root of a block-literal chain as a block, alongside the element it chains to', () => {
+    const root = parse('.card .card__title {}');
+    expect(buildBlockIndex(root, defaultOptions)).toEqual(new Set(['card']));
   });
 
   it('respects custom separators', () => {
@@ -62,9 +67,14 @@ describe('buildDefinedClassIndex', () => {
     expect(buildDefinedClassIndex(root)).toEqual(new Set(['card', 'card__title', 'card--featured']));
   });
 
-  it('does not index a compound multi-class selector', () => {
+  it('indexes every class of a compound multi-class selector', () => {
     const root = parse('.card.dark {}');
-    expect(buildDefinedClassIndex(root)).toEqual(new Set());
+    expect(buildDefinedClassIndex(root)).toEqual(new Set(['card', 'dark']));
+  });
+
+  it('indexes every class of a chained (descendant-combinator) selector, not just the leading one', () => {
+    const root = parse('.card .card__title {}');
+    expect(buildDefinedClassIndex(root)).toEqual(new Set(['card', 'card__title']));
   });
 
   it('indexes both sides of a selector list', () => {

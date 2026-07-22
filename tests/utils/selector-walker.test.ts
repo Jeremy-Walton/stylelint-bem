@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getClassNames, getClassNodes } from '@src/utils/selector-walker.js';
+import { getClassNames, getClassNodes, isPureAmpersandPseudoSelector } from '@src/utils/selector-walker.js';
 
 describe('getClassNames', () => {
   it('extracts a single class name', () => {
@@ -344,5 +344,75 @@ describe('getClassNodes', () => {
         chainRootClassNames: ['stepper__item'],
       },
     ]);
+  });
+
+  it('classifies a class-only selector that starts with a bare combinator as chained with an implicit ampersand root', () => {
+    expect(getClassNodes('+ .block__label')).toEqual([
+      {
+        name: 'block__label',
+        sourceIndex: 2,
+        nestingShape: 'chained',
+        chainRootHasAmpersand: true,
+        chainRootClassNames: [],
+      },
+    ]);
+  });
+
+  it('classifies a class after a classless (bare tag) chain root as chained with no chain root classes at all — the exact reported case', () => {
+    expect(getClassNodes('summary .block__element')).toEqual([
+      {
+        name: 'block__element',
+        sourceIndex: 8,
+        nestingShape: 'chained',
+        chainRootHasAmpersand: false,
+        chainRootClassNames: [],
+      },
+    ]);
+  });
+
+  it('classifies a class after a leading-combinator root that itself contains a tag as chained with an implicit ampersand root — the exact reported case', () => {
+    expect(getClassNodes('> summary .block__element')).toEqual([
+      {
+        name: 'block__element',
+        sourceIndex: 10,
+        nestingShape: 'chained',
+        chainRootHasAmpersand: true,
+        chainRootClassNames: [],
+      },
+    ]);
+  });
+});
+
+describe('isPureAmpersandPseudoSelector', () => {
+  it('accepts a bare ampersand with a single pseudo-class', () => {
+    expect(isPureAmpersandPseudoSelector('&:hover')).toBe(true);
+  });
+
+  it('accepts a bare ampersand with a pseudo-class that takes a selector argument', () => {
+    expect(isPureAmpersandPseudoSelector('&:has(.other)')).toBe(true);
+  });
+
+  it('accepts a bare ampersand with several chained pseudo-classes', () => {
+    expect(isPureAmpersandPseudoSelector('&:has(.other):hover')).toBe(true);
+  });
+
+  it('accepts a bare ampersand with no pseudo-class at all — a no-op wrapper, still the same subject', () => {
+    expect(isPureAmpersandPseudoSelector('&')).toBe(true);
+  });
+
+  it('rejects a class compounded alongside the ampersand, even with a pseudo-class present', () => {
+    expect(isPureAmpersandPseudoSelector('&.other-class:hover')).toBe(false);
+  });
+
+  it('rejects a selector with no ampersand at all', () => {
+    expect(isPureAmpersandPseudoSelector(':hover')).toBe(false);
+  });
+
+  it('rejects a chain (internal combinator), even one rooted in a bare ampersand', () => {
+    expect(isPureAmpersandPseudoSelector('&:hover .block__el')).toBe(false);
+  });
+
+  it('does not let a class inside the pseudo argument disqualify the selector', () => {
+    expect(isPureAmpersandPseudoSelector('&:has(.other, .thing)')).toBe(true);
   });
 });

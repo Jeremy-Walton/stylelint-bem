@@ -53,6 +53,33 @@ testRule({
       code: '.card { &.card--dark.card--featured { .card__title {} } }',
     },
     {
+      description:
+        'the exact reported case: a modifier compound-nested inside another modifier of the same block, rather than directly under the block itself',
+      code: '.card { &.card--dark { &.card--featured {} } }',
+    },
+    {
+      description: 'modifier stacking through same-block ampersand-modifier layers works at any depth',
+      code: '.card { &.card--dark { &.card--featured { &.card--pulsing {} } } }',
+    },
+    {
+      description:
+        "the exact reported case: a modifier nested directly under the block through a pure ampersand + pseudo-class wrapper (&:has(...)) — the wrapper narrows the same subject, it doesn't select a different element",
+      code: '.card { &:has(.other) { &.card--featured {} } }',
+    },
+    {
+      description: 'a modifier nested through a plain ampersand + pseudo-class wrapper (no selector argument)',
+      code: '.card { &:hover { &.card--featured {} } }',
+    },
+    {
+      description: 'a modifier nested through several chained pseudo-classes compounded with the ampersand wrapper',
+      code: '.card { &:has(.other):hover { &.card--featured {} } }',
+    },
+    {
+      description:
+        'a modifier nested through a mix of a same-block ampersand-modifier layer and a pseudo-class wrapper, in either order',
+      code: '.card { &.card--dark { &:has(.other) { &.card--featured {} } } }',
+    },
+    {
       description: 'the exact reported case (trimmed): a block with both single- and multi-modifier compound rules',
       code: `
         .alert {
@@ -133,6 +160,19 @@ testRule({
           &.expander--ready .expander__area {
             &.expander__area--open {
               @starting-style {}
+            }
+          }
+        }
+      `,
+    },
+    {
+      description:
+        'the exact reported case (trimmed): a sibling element reached via a bare leading combinator, nested inside a pseudo-only rule with no explicit "&" — native nesting treats a leading combinator as an implicit ampersand',
+      code: `
+        .card {
+          .card__input {
+            &:focus-visible {
+              + .card__label {}
             }
           }
         }
@@ -227,6 +267,46 @@ testRule({
         }
       `,
     },
+    {
+      description:
+        'the exact reported case: an element ampersand-compounded on a classless tag ancestor (a native element given a BEM class directly, no wrapper div needed)',
+      code: '.block { td { &.block__element {} } }',
+    },
+    {
+      description:
+        'an element ampersand-compounded on a classless tag ancestor, carrying its own modifier in the same compound',
+      code: '.block { td { &.block__element.block__element--large {} } }',
+    },
+    {
+      description: 'an element ampersand-compounded on a classless tag ancestor several levels deep',
+      code: '.block { table { tbody { tr { td { &.block__element {} } } } } }',
+    },
+    {
+      description: 'a pseudo-class on the classless tag ancestor does not disqualify it',
+      code: '.block { td:first-child { &.block__element {} } }',
+    },
+    {
+      description: 'a modifier of an element ampersand-compounded on a classless tag ancestor, nested one level deeper',
+      code: '.block { td { &.block__element { &.block__element--large {} } } }',
+    },
+    {
+      description:
+        'the exact reported case: an element reached via a chain rooted in a classless tag (a bare "summary", no wrapper class), nested inside a real ancestor via a transparent ampersand-attribute wrapper',
+      code: '.block { &[open] { summary .block__element {} } }',
+    },
+    {
+      description:
+        'the exact reported case: the same chain, with a leading child combinator implying "&" before the classless tag root',
+      code: '.block { &[open] { > summary .block__element {} } }',
+    },
+    {
+      description: 'an element ampersand-compounded on a classless tag ancestor, carrying its own modifier, reached via a classless chain root',
+      code: '.block { &[open] { summary .block__element.block__element--large {} } }',
+    },
+    {
+      description: 'a modifier of an element reached via a classless-tag chain root, nested one level deeper',
+      code: '.block { &[open] { summary .block__element { &.block__element--large {} } } }',
+    },
   ],
   reject: [
     {
@@ -246,6 +326,17 @@ testRule({
       warnings: [{ message: messages.elementNotNested('stepper__item', 'stepper') }],
     },
     {
+      description:
+        'a chain rooted in a classless tag is not self-contained either — a classless root proves nothing about which block the element belongs to, so it still needs a real matching ancestor',
+      code: 'summary .block__element {}',
+      warnings: [{ message: messages.elementNotNested('block__element', 'block') }],
+    },
+    {
+      description: 'a chain rooted in a classless tag under the wrong block is still rejected',
+      code: '.nav { summary .block__element {} }',
+      warnings: [{ message: messages.elementNotNested('block__element', 'block') }],
+    },
+    {
       description: "strict flags another block's element customized from within a component tree",
       code: '.panel { .panel__header { .accordion__marker {} } }',
       warnings: [{ message: messages.elementNotNested('accordion__marker', 'accordion') }],
@@ -261,14 +352,16 @@ testRule({
       warnings: [{ message: messages.elementNotNested('card__title', 'card') }],
     },
     {
-      description: 'element written as a compound "&" selector instead of a full selector',
+      description:
+        'element written as a compound "&" selector instead of a full selector — shape-for-shape identical to a valid modifier compound, so the message calls that out specifically',
       code: '.card { &.card__title {} }',
-      warnings: [{ message: messages.elementNotFullSelector('card__title') }],
+      warnings: [{ message: messages.elementCompoundedLikeModifier('card__title', 'card--title') }],
     },
     {
-      description: 'element preceded by a combinator (not the leading compound in its selector)',
+      description:
+        'element preceded by a combinator (not the leading compound in its selector) — the root is unrelated to the element\'s own block, so it doesn\'t count as nesting at all',
       code: '.wrapper .card__title {}',
-      warnings: [{ message: messages.elementNotFullSelector('card__title') }],
+      warnings: [{ message: messages.elementNotNested('card__title', 'card') }],
     },
     {
       description: 'each un-nested element in a selector list is reported separately',
@@ -287,17 +380,29 @@ testRule({
     {
       description: "an element nested under another component still can't use the compound '&' shape",
       code: '.nav { &.card__title {} }',
-      warnings: [{ message: messages.elementNotFullSelector('card__title') }],
+      warnings: [{ message: messages.elementCompoundedLikeModifier('card__title', 'card--title') }],
+    },
+    {
+      description:
+        'an ampersand-compounded element under a real, class-bearing ancestor is still block/element conflation — the classless-tag-ancestor carve-out does not apply here',
+      code: '.card { &.card__title {} }',
+      warnings: [{ message: messages.elementCompoundedLikeModifier('card__title', 'card--title') }],
+    },
+    {
+      description:
+        'an element ampersand-compounded on a classless tag ancestor still needs its own block nested somewhere — the shape carve-out only concerns compounding, not block membership',
+      code: '.nav { td { &.block__element {} } }',
+      warnings: [{ message: messages.elementNotNested('block__element', 'block') }],
     },
     {
       description: 'a chain rooted in a plain class-compound whose classes do not name the expected block',
       code: '.card { .wrapper.other-class .card__title {} }',
-      warnings: [{ message: messages.elementNotFullSelector('card__title') }],
+      warnings: [{ message: messages.elementNotNested('card__title', 'card') }],
     },
     {
       description: 'the chain only extends one hop — a second hop past the ampersand root still needs its own rule',
       code: '.card { &.card--featured .wrapper .card__title {} }',
-      warnings: [{ message: messages.elementNotFullSelector('card__title') }],
+      warnings: [{ message: messages.elementNotNested('card__title', 'card') }],
     },
     {
       description: 'an ampersand-chained element with no real ancestor rule at all is still flagged',
@@ -362,6 +467,24 @@ testRule({
     {
       description: 'modifier compound-nested under an intermediate wrapper rule (not directly under its block)',
       code: '.card { .wrapper { &.card--featured {} } }',
+      warnings: [{ message: messages.modifierNotNestedDirectly('card--featured', 'card') }],
+    },
+    {
+      description:
+        "modifier stacking does not collapse through a different block's ampersand-modifier layer",
+      code: '.card { &.card--dark { &.nav--active {} } }',
+      warnings: [{ message: messages.modifierNotNestedDirectly('nav--active', 'nav') }],
+    },
+    {
+      description:
+        'a class compounded alongside the ampersand still disqualifies a pseudo-class wrapper — an unrelated class changes the selector, unlike a bare pseudo-class narrowing',
+      code: '.card { &.other-class:hover { &.card--featured {} } }',
+      warnings: [{ message: messages.modifierNotNestedDirectly('card--featured', 'card') }],
+    },
+    {
+      description:
+        "a class matching the target's name inside a pseudo-class argument does not satisfy the wrapper check — it's a match condition, not the block rule itself",
+      code: '.nav { &:has(.card) { &.card--featured {} } }',
       warnings: [{ message: messages.modifierNotNestedDirectly('card--featured', 'card') }],
     },
   ],
@@ -444,7 +567,7 @@ testRule({
     {
       description: "weak still flags a chained element whose root doesn't name its expected block",
       code: '.wrapper .card__title {}',
-      warnings: [{ message: messages.elementNotFullSelector('card__title') }],
+      warnings: [{ message: messages.elementNotNestedAnywhere('card__title', 'card') }],
     },
     {
       description: 'weak still flags a modifier nested under the wrong ancestor',
@@ -459,7 +582,7 @@ testRule({
     {
       description: 'weak still flags an element that has an ancestor but uses a compound "&" selector',
       code: '.card { &.card__title {} }',
-      warnings: [{ message: messages.elementNotFullSelector('card__title') }],
+      warnings: [{ message: messages.elementCompoundedLikeModifier('card__title', 'card--title') }],
     },
   ],
 });
@@ -492,6 +615,12 @@ testRule({
       description: 'modifier not compound-nested, using custom separators',
       code: '.card { .card_featured {} }',
       warnings: [{ message: messages.modifierNotCompound('card_featured', 'card') }],
+    },
+    {
+      description:
+        'element ampersand-compounded like a modifier, using custom separators — the suggested modifier name respects them too',
+      code: '.card { &.card-title {} }',
+      warnings: [{ message: messages.elementCompoundedLikeModifier('card-title', 'card_title') }],
     },
   ],
 });

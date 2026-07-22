@@ -7,10 +7,9 @@ function buildDefinedClassIndex(root: Root): Set<string> {
 
   root.walkRules((rule) => {
     for (const selector of rule.selectors) {
-      const classNames = getClassNames(selector);
-      if (classNames.length !== 1) continue;
-
-      defined.add(classNames[0]!);
+      for (const className of getClassNames(selector)) {
+        defined.add(className);
+      }
     }
   });
 

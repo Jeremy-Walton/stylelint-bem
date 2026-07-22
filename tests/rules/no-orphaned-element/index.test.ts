@@ -27,6 +27,15 @@ testRule({
       description: 'non-BEM class (no separators) is never checked',
       code: '.foo {}',
     },
+    {
+      description:
+        'the exact reported case: block and element defined together via a block-literal chain (a flat descendant combinator), not a separate block rule',
+      code: '.card .card__title {}',
+    },
+    {
+      description: 'block and element defined together via a class-compound selector',
+      code: '.card.card--dark .card__title {}',
+    },
   ],
   reject: [
     {
