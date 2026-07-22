@@ -1,25 +1,15 @@
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import postcss from 'postcss';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   findProjectRoot,
   scanProjectDefinedClasses,
   scanProjectDefinedClassesForFile,
 } from '@src/utils/project-scan.js';
+import { useTmpProjects } from '@tests/test-utils/tmp-project.js';
 
-const tmpDirs: string[] = [];
-
-async function makeTmpDir(): Promise<string> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'stylelint-bem-'));
-  tmpDirs.push(dir);
-  return dir;
-}
-
-afterEach(async () => {
-  await Promise.all(tmpDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })));
-});
+const makeTmpDir = useTmpProjects();
 
 describe('findProjectRoot', () => {
   it('finds a package.json in the starting directory', async () => {

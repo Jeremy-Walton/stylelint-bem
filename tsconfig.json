@@ -10,7 +10,7 @@
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": ".",
     "types": ["node"],
     "baseUrl": ".",
     "paths": {
@@ -18,5 +18,5 @@
       "@tests/*": ["tests/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "tests"]
 }

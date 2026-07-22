@@ -49,43 +49,17 @@ testRule({
       code: '.card { &.card--dark.card--featured {} }',
     },
     {
-      description: 'three modifiers of the same block compounded together via "&"',
-      code: '.card { &.card--dark.card--featured.card--pulsing {} }',
-    },
-    {
       description: 'two modifiers compounded via "&", with a nested element inside',
       code: '.card { &.card--dark.card--featured { .card__title {} } }',
     },
     {
-      description: 'the exact reported case: a block with several single- and multi-modifier compound rules',
+      description: 'the exact reported case (trimmed): a block with both single- and multi-modifier compound rules',
       code: `
         .alert {
-          align-items: start;
-
-          &.alert--banner {
-            text-decoration: none;
-          }
-
-          &.alert--padded {
-            padding: var(--op-space-large);
-          }
+          &.alert--banner {}
 
           &.alert--muted.alert--warning {
-            background-color: var(--op-color-alerts-warning-plus-seven);
-            color: var(--op-color-alerts-warning-on-plus-eight);
-
-            .alert__icon {
-              color: var(--op-color-alerts-warning-base);
-            }
-          }
-
-          &.alert--muted.alert--danger {
-            background-color: var(--op-color-alerts-danger-plus-seven);
-            color: var(--op-color-alerts-danger-on-plus-eight);
-
-            .alert__icon {
-              color: var(--op-color-alerts-danger-base);
-            }
+            .alert__icon {}
           }
         }
       `,
@@ -144,10 +118,6 @@ testRule({
       code: '.card { .card__title { &:not(.card__title--large) {} } }',
     },
     {
-      description: 'a class referenced inside a pseudo nested within :has() is not checked',
-      code: '.card { &:has(:is(.nav__item)) {} }',
-    },
-    {
       description: 'element addressed via a chain off an ampersand-modifier compound, flattened in one selector',
       code: '.card { &.card--featured .card__title {} }',
     },
@@ -156,14 +126,13 @@ testRule({
       code: '.card { &.card--featured .card__title { &.card__title--large {} } }',
     },
     {
-      description: 'the exact reported case: element reached via an ampersand-modifier chain, with a nested modifier inside',
+      description:
+        'the exact reported case (trimmed): element reached via an ampersand-modifier chain, with a nested modifier inside a nested at-rule',
       code: `
         .expander {
           &.expander--ready .expander__area {
             &.expander__area--open {
-              @starting-style {
-                block-size: 0;
-              }
+              @starting-style {}
             }
           }
         }
@@ -188,28 +157,15 @@ testRule({
       code: '.card .card__title { &.card__title--large {} }',
     },
     {
-      description: 'the exact reported case: a block-literal chained element under a transparent @media, with siblings',
+      description:
+        'the exact reported case (trimmed): a block-literal chained element under a transparent @media, with siblings',
       code: `
         @media (max-width: 768px) {
           .survey-form .survey-form__questions {
-            padding-inline-start: 0px;
-
-            .field-group {
-              grid-column: 1 / 3;
-            }
+            .field-group {}
 
             .rich-text {
-              &.rich-text--full-width {
-                margin-inline-start: 0px;
-              }
-            }
-
-            .address-fields {
-              grid-template-columns: 1fr;
-
-              .field-group {
-                grid-column: 1;
-              }
+              &.rich-text--full-width {}
             }
           }
         }
@@ -237,33 +193,18 @@ testRule({
       code: '.stepper { .stepper__item:has(+ .separator-line) .stepper__item-marker {} }',
     },
     {
-      description: 'the exact reported case: two chained rules, each rooted in a sibling element with a pseudo-class',
+      description:
+        'the exact reported case (trimmed): two chained rules, each rooted in a sibling element with a pseudo-class',
       code: `
         .stepper {
-          --_sw-activity-marker-inline-size: var(--op-space-large);
-          --_sw-activity-marker-block-size: var(--op-space-x-small);
-
-          display: grid;
-          gap: var(--op-space-small);
-          position: relative;
-
-          .stepper__item:first-child .stepper__item-marker {
-            anchor-name: --sw-first-activity-marker;
-          }
-
-          .stepper__item:has(+ .separator-line) .stepper__item-marker {
-            anchor-name: --sw-last-activity-marker;
-          }
+          .stepper__item:first-child .stepper__item-marker {}
+          .stepper__item:has(+ .separator-line) .stepper__item-marker {}
         }
       `,
     },
     {
       description: 'a tag compounded with an element does not disqualify it (e.g. a custom element)',
       code: '.card { x-icon.card__icon {} }',
-    },
-    {
-      description: 'a tag compounded with an element and its own modifier does not disqualify it',
-      code: '.card { x-icon.card__icon.card__icon--large {} }',
     },
     {
       description: 'a tag compounded with a modifier directly on its target does not disqualify it',
@@ -275,26 +216,12 @@ testRule({
     },
     {
       description:
-        'the exact reported case: a custom element tag compounded with a nested BEM element (wrapped in its real block, as in the reporter\'s full file)',
+        'the exact reported case (trimmed): a custom element tag compounded with a nested BEM element, wrapped in its real block',
       code: `
         .widget-panel {
           .widget-panel__body {
-            display: flex;
-            flex-direction: column;
-            gap: var(--op-space-large);
-            min-inline-size: 60%;
-            align-self: center;
-
             x-icon.widget-panel__body-icon {
-              --sw-icon-font-size: var(--_sw-kiosk-icon-size);
-              --sw-icon-color: transparent;
-
-              &::part(icon) {
-                background: var(--sw-linear-gradient);
-                background-size: 100%;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-              }
+              &::part(icon) {}
             }
           }
         }

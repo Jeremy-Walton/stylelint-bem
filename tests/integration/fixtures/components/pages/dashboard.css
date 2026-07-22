@@ -1,6 +1,5 @@
 /* non-BEM utility class — never checked */
 .sr-only {
-  position: absolute;
 }
 
 /* a page adding a modifier to a block defined in shared/button.css — the block is defined

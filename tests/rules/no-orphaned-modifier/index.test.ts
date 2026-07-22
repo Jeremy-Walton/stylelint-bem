@@ -1,9 +1,9 @@
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import stylelint from 'stylelint';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { testRule } from '@tests/test-utils/test-rule.js';
+import { useTmpProjects } from '@tests/test-utils/tmp-project.js';
 import plugin, { messages, ruleName } from '@src/rules/no-orphaned-modifier/index.js';
 
 testRule({
@@ -117,15 +117,10 @@ testRule({
 });
 
 describe(`${ruleName} — project-wide orphan scope`, () => {
-  const tmpDirs: string[] = [];
-
-  afterEach(async () => {
-    await Promise.all(tmpDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })));
-  });
+  const makeTmpDir = useTmpProjects();
 
   async function makeProject(): Promise<string> {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'stylelint-bem-rule-'));
-    tmpDirs.push(dir);
+    const dir = await makeTmpDir();
     await fs.writeFile(path.join(dir, 'package.json'), '{}');
     return dir;
   }
