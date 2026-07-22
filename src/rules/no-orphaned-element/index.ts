@@ -1,14 +1,18 @@
 import stylelint from 'stylelint';
 import type { Root } from 'postcss';
-import { buildDefinedClassIndex } from '../../utils/block-index.js';
-import { scanProjectDefinedClassesForFile } from '../../utils/project-scan.js';
+import { buildDefinedClassIndexForFile } from '../../utils/project-scan.js';
 import {
   bemOrphanOptionsSchema,
   resolveKnownBlocks,
   resolveSeparatorOptions,
 } from '../../utils/rule-options.js';
 import type { BemOrphanOptions } from '../../utils/rule-options.js';
-import { forEachBemClass, isDefinedOrKnown, reportBemViolation } from '../shared/rule-context.js';
+import {
+  forEachBemClass,
+  isDefinedOrKnown,
+  reportBemViolation,
+  validateBemOptions,
+} from '../shared/rule-context.js';
 import type { RuleContext } from '../shared/rule-context.js';
 
 const ruleName = 'stylelint-bem/no-orphaned-element';
@@ -29,22 +33,16 @@ function checkNoOrphanedElement(root: Root, context: RuleContext): void {
 
 const rule: stylelint.Rule<true, BemOrphanOptions> = (primary, secondaryOptions) => {
   return async (root, result) => {
-    const validPrimary = stylelint.utils.validateOptions(result, ruleName, {
-      actual: primary,
-      possible: [true],
-    });
+    const validOptions = validateBemOptions(
+      result,
+      ruleName,
+      primary,
+      [true],
+      secondaryOptions,
+      bemOrphanOptionsSchema,
+    );
 
-    if (!validPrimary) return;
-
-    const validSecondary = stylelint.utils.validateOptions(result, ruleName, {
-      actual: secondaryOptions,
-      possible: bemOrphanOptionsSchema,
-      optional: true,
-    });
-
-    if (!validSecondary) return;
-
-    const projectClasses = await scanProjectDefinedClassesForFile(root);
+    if (!validOptions) return;
 
     const context: RuleContext = {
       ruleName,
@@ -52,7 +50,7 @@ const rule: stylelint.Rule<true, BemOrphanOptions> = (primary, secondaryOptions)
       separatorOptions: resolveSeparatorOptions(secondaryOptions),
       ignoreSelectors: secondaryOptions?.ignoreSelectors,
       knownBlocks: resolveKnownBlocks(secondaryOptions),
-      definedClassIndex: new Set([...projectClasses, ...buildDefinedClassIndex(root)]),
+      definedClassIndex: await buildDefinedClassIndexForFile(root),
       messages,
     };
 

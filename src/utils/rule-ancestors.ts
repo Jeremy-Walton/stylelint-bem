@@ -1,7 +1,6 @@
 import type { Rule } from 'postcss';
 
-// At-rules (@media, @supports, ...) are transparent — they don't count as a nesting level,
-// so a rule wrapped in one is still "directly under" or "nested inside" its Rule ancestors.
+// At-rules (@media, @supports, ...) are transparent — skipped without counting as a nesting level.
 function findAncestorRules(node: Rule): Rule[] {
   const rules: Rule[] = [];
   let current = node.parent;

@@ -1,8 +1,13 @@
 import type { Root } from 'postcss';
-import { type BemSeparatorOptions, parseClassName } from './bem-parser.js';
 import { getClassNames } from './selector-walker.js';
 
+const definedClassIndexCache = new WeakMap<Root, Set<string>>();
+
+// Cached per Root — multiple rules build a definedClassIndex over the same file.
 function buildDefinedClassIndex(root: Root): Set<string> {
+  const cached = definedClassIndexCache.get(root);
+  if (cached) return cached;
+
   const defined = new Set<string>();
 
   root.walkRules((rule) => {
@@ -13,19 +18,8 @@ function buildDefinedClassIndex(root: Root): Set<string> {
     }
   });
 
+  definedClassIndexCache.set(root, defined);
   return defined;
 }
 
-function buildBlockIndex(root: Root, options: BemSeparatorOptions): Set<string> {
-  const blocks = new Set<string>();
-
-  for (const className of buildDefinedClassIndex(root)) {
-    if (!parseClassName(className, options).isBem) {
-      blocks.add(className);
-    }
-  }
-
-  return blocks;
-}
-
-export { buildBlockIndex, buildDefinedClassIndex };
+export { buildDefinedClassIndex };

@@ -3,7 +3,7 @@ import type { Root } from 'postcss';
 import { isKebabCase } from '../../utils/bem-parser.js';
 import { bemBaseOptionsSchema, resolveSeparatorOptions } from '../../utils/rule-options.js';
 import type { BemBaseOptions } from '../../utils/rule-options.js';
-import { forEachBemClass, reportBemViolation } from '../shared/rule-context.js';
+import { forEachBemClass, reportBemViolation, validateBemOptions } from '../shared/rule-context.js';
 import type { RuleContext } from '../shared/rule-context.js';
 
 const ruleName = 'stylelint-bem/valid-name';
@@ -26,20 +26,16 @@ function checkValidName(root: Root, context: RuleContext): void {
 
 const rule: stylelint.Rule<true, BemBaseOptions> = (primary, secondaryOptions) => {
   return async (root, result) => {
-    const validPrimary = stylelint.utils.validateOptions(result, ruleName, {
-      actual: primary,
-      possible: [true],
-    });
+    const validOptions = validateBemOptions(
+      result,
+      ruleName,
+      primary,
+      [true],
+      secondaryOptions,
+      bemBaseOptionsSchema,
+    );
 
-    if (!validPrimary) return;
-
-    const validSecondary = stylelint.utils.validateOptions(result, ruleName, {
-      actual: secondaryOptions,
-      possible: bemBaseOptionsSchema,
-      optional: true,
-    });
-
-    if (!validSecondary) return;
+    if (!validOptions) return;
 
     const context: RuleContext = {
       ruleName,

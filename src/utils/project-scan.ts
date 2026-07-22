@@ -53,14 +53,12 @@ async function performScan(projectRoot: string): Promise<Set<string>> {
       }
 
       try {
-        // postcss-scss parses plain CSS fine too (it's a superset), so using it for every
-        // matched file — not just .scss — avoids branching on extension while still handling
-        // SCSS-only syntax (e.g. "//" line comments) that would crash the default CSS parser.
+        // postcss-scss is a superset of CSS, so one parser handles both without branching on
+        // extension, including SCSS-only syntax (e.g. "//" comments) the CSS parser would reject.
         const root = scssSyntax.parse(css, { from: file });
         for (const className of buildDefinedClassIndex(root)) classes.add(className);
       } catch {
-        // Skip files that fail to parse — a broken file elsewhere in the project
-        // shouldn't prevent linting the file currently being checked.
+        // A broken file elsewhere in the project shouldn't block linting the current file.
       }
     }),
   );
@@ -78,4 +76,21 @@ async function scanProjectDefinedClassesForFile(root: Root): Promise<Set<string>
   return scanProjectDefinedClasses(projectRoot);
 }
 
-export { findProjectRoot, scanProjectDefinedClasses, scanProjectDefinedClassesForFile };
+// The project-wide scan's I/O and the current file's own rule walk are independent, so they run
+// concurrently.
+async function buildDefinedClassIndexForFile(root: Root): Promise<Set<string>> {
+  const projectClassesPromise = scanProjectDefinedClassesForFile(root);
+  const fileClasses = buildDefinedClassIndex(root);
+  const projectClasses = await projectClassesPromise;
+
+  const combined = new Set(projectClasses);
+  for (const className of fileClasses) combined.add(className);
+  return combined;
+}
+
+export {
+  findProjectRoot,
+  scanProjectDefinedClasses,
+  scanProjectDefinedClassesForFile,
+  buildDefinedClassIndexForFile,
+};

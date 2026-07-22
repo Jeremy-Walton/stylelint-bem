@@ -25,8 +25,7 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// Longest-first so that if one separator's value contains the other's
-// (e.g. a custom '__' vs '_'), the longer one always wins the match.
+// Longest-first, so a separator whose value contains the other's (e.g. custom '__' vs '_') wins.
 function getSeparatorTokens(options: BemSeparatorOptions): SeparatorToken[] {
   return [
     { type: 'element' as const, value: options.elementSeparator },
@@ -45,8 +44,7 @@ interface CompiledSeparators {
 
 const compiledSeparatorsCache = new WeakMap<BemSeparatorOptions, CompiledSeparators>();
 
-// separatorOptions is built once per lint run and reused across every class name parsed in
-// that run, so caching per-options-object avoids recompiling the same regex per class name.
+// Caches per options object so the regex isn't recompiled for every class name in a lint run.
 function getCompiledSeparators(options: BemSeparatorOptions): CompiledSeparators {
   let compiled = compiledSeparatorsCache.get(options);
 
@@ -115,5 +113,14 @@ function formatClassName(
   );
 }
 
+function lastSegment(parsed: ParsedBemClassName): BemSegment | undefined {
+  return parsed.segments[parsed.segments.length - 1];
+}
+
+// e.g. "block__el" for "block__el--mod", or "block" for "block--mod".
+function parentClassName(parsed: ParsedBemClassName, options: BemSeparatorOptions): string {
+  return formatClassName(parsed.block, parsed.segments.slice(0, -1), options);
+}
+
 export type { BemSeparatorOptions, BemSegmentSeparator, BemSegment, ParsedBemClassName };
-export { parseClassName, isKebabCase, formatClassName };
+export { parseClassName, isKebabCase, formatClassName, lastSegment, parentClassName };
