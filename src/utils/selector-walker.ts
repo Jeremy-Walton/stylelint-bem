@@ -4,9 +4,14 @@ import parser from 'postcss-selector-parser';
 // selector, e.g. `.block__el`. 'ampersand' — same, but compounded with the nesting selector `&`,
 // e.g. `&.block--mod`. 'class-compound' — a leading compound of two or more classes and nothing
 // else, e.g. `.block.block--mod`; the sibling class names are exposed via `compoundClassNames`.
-// 'other' — anything else (preceded by a combinator, compounded with a tag/id, etc.) — used by
+// 'chained' — a class-only compound exactly one combinator past a leading `&`(+classes) compound,
+// e.g. the `.block__el` in `&.block--mod .block__el`; this flattens what would otherwise be two
+// levels of native nesting (`&.block--mod { .block__el { } }`) into a single selector, so it's
+// treated the same way as being nested one level inside that ampersand compound. Sibling classes
+// in its own compound are exposed via `compoundClassNames`, same as 'class-compound'. 'other' —
+// anything else (preceded by an unrelated combinator, compounded with a tag/id, etc.) — used by
 // requireNesting to tell a full selector from a compound one.
-type NestingShape = 'bare' | 'ampersand' | 'class-compound' | 'other';
+type NestingShape = 'bare' | 'ampersand' | 'class-compound' | 'chained' | 'other';
 
 interface ClassNode {
   name: string;
@@ -30,6 +35,15 @@ function getEnclosingPseudos(classNode: parser.ClassName): string[] {
 
 type ShapeAnalysis = Pick<ClassNode, 'nestingShape' | 'compoundClassNames'>;
 
+// True for a compound consisting only of the nesting selector `&` and classes (at least one `&`)
+// — the shape of a leading `.block`/`&.block--mod` reference a chained compound can follow.
+function isAmpersandChainRoot(compound: parser.Node[]): boolean {
+  return (
+    compound.some((node) => node.type === 'nesting') &&
+    compound.every((node) => node.type === 'nesting' || node.type === 'class')
+  );
+}
+
 function analyzeNestingShape(classNode: parser.ClassName): ShapeAnalysis {
   const container = classNode.parent;
   if (!container) return { nestingShape: 'other' };
@@ -39,7 +53,6 @@ function analyzeNestingShape(classNode: parser.ClassName): ShapeAnalysis {
 
   let start = index;
   while (start > 0 && siblings[start - 1]!.type !== 'combinator') start--;
-  if (start !== 0) return { nestingShape: 'other' };
 
   let end = index;
   while (end < siblings.length - 1 && siblings[end + 1]!.type !== 'combinator') end++;
@@ -55,15 +68,31 @@ function analyzeNestingShape(classNode: parser.ClassName): ShapeAnalysis {
   );
 
   if (compound.some((node) => node.type === 'nesting')) {
+    if (start !== 0) return { nestingShape: 'other' };
     return siblingClasses.length === 0 ? { nestingShape: 'ampersand' } : { nestingShape: 'other' };
   }
 
-  if (siblingClasses.length === 0) return { nestingShape: 'bare' };
+  const compoundClassNames =
+    siblingClasses.length > 0 ? siblingClasses.map((node) => node.value) : undefined;
 
-  return {
-    nestingShape: 'class-compound',
-    compoundClassNames: siblingClasses.map((node) => node.value),
-  };
+  if (start === 0) {
+    return compoundClassNames
+      ? { nestingShape: 'class-compound', compoundClassNames }
+      : { nestingShape: 'bare' };
+  }
+
+  // Exactly one hop past a leading `&`(+classes) compound flattens what would otherwise be a
+  // level of native nesting into this single selector — treated the same as being nested inside
+  // it. The preceding compound must itself start at index 0 (nothing before it) and contain no
+  // internal combinator, so deeper chains (two or more hops past the root) fall through to 'other'.
+  const precedingCompound = siblings.slice(0, start - 1);
+  const isChained =
+    !precedingCompound.some((node) => node.type === 'combinator') &&
+    isAmpersandChainRoot(precedingCompound);
+
+  if (!isChained) return { nestingShape: 'other' };
+
+  return compoundClassNames ? { nestingShape: 'chained', compoundClassNames } : { nestingShape: 'chained' };
 }
 
 function getClassNodes(selector: string): ClassNode[] {

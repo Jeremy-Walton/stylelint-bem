@@ -141,4 +141,53 @@ describe('getClassNodes', () => {
     ]);
   });
 
+  it('classifies a class after an ampersand-rooted compound as chained', () => {
+    expect(getClassNodes('&.card--featured .card__title')).toEqual([
+      { name: 'card--featured', sourceIndex: 1, nestingShape: 'ampersand' },
+      { name: 'card__title', sourceIndex: 17, nestingShape: 'chained' },
+    ]);
+  });
+
+  it('classifies a class after a bare ampersand root as chained', () => {
+    expect(getClassNodes('& .card__title')).toEqual([{ name: 'card__title', sourceIndex: 2, nestingShape: 'chained' }]);
+  });
+
+  it('lists own-modifier sibling classes for a chained element', () => {
+    expect(getClassNodes('&.card--featured .card__title.card__title--large')).toEqual([
+      { name: 'card--featured', sourceIndex: 1, nestingShape: 'ampersand' },
+      {
+        name: 'card__title',
+        sourceIndex: 17,
+        nestingShape: 'chained',
+        compoundClassNames: ['card__title--large'],
+      },
+      {
+        name: 'card__title--large',
+        sourceIndex: 29,
+        nestingShape: 'chained',
+        compoundClassNames: ['card__title'],
+      },
+    ]);
+  });
+
+  it('does not classify a class after a non-ampersand-rooted compound as chained', () => {
+    expect(getClassNodes('.card.card--featured .card__title')).toEqual([
+      { name: 'card', sourceIndex: 0, nestingShape: 'class-compound', compoundClassNames: ['card--featured'] },
+      {
+        name: 'card--featured',
+        sourceIndex: 5,
+        nestingShape: 'class-compound',
+        compoundClassNames: ['card'],
+      },
+      { name: 'card__title', sourceIndex: 21, nestingShape: 'other' },
+    ]);
+  });
+
+  it('only extends the chain one hop past the ampersand root', () => {
+    expect(getClassNodes('&.card--featured .wrapper .card__title')).toEqual([
+      { name: 'card--featured', sourceIndex: 1, nestingShape: 'ampersand' },
+      { name: 'wrapper', sourceIndex: 17, nestingShape: 'chained' },
+      { name: 'card__title', sourceIndex: 26, nestingShape: 'other' },
+    ]);
+  });
 });

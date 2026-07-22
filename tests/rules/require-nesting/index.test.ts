@@ -96,6 +96,33 @@ testRule({
       description: 'a class referenced inside a pseudo nested within :has() is not checked',
       code: '.card { &:has(:is(.nav__item)) {} }',
     },
+    {
+      description: 'element addressed via a chain off an ampersand-modifier compound, flattened in one selector',
+      code: '.card { &.card--featured .card__title {} }',
+    },
+    {
+      description: 'a modifier compound-nested directly inside a chained element rule',
+      code: '.card { &.card--featured .card__title { &.card__title--large {} } }',
+    },
+    {
+      description: 'the exact reported case: element reached via an ampersand-modifier chain, with a nested modifier inside',
+      code: `
+        .animated-reveal {
+          &.animated-reveal--ready .animated-reveal__area {
+            &.animated-reveal__area--open {
+              @starting-style {
+                block-size: 0;
+              }
+            }
+          }
+        }
+      `,
+    },
+    {
+      description:
+        'element and its own modifier both compounded together in the same chained hop — both are accepted',
+      code: '.card { &.card--featured .card__title.card__title--large {} }',
+    },
   ],
   reject: [
     {
@@ -151,6 +178,24 @@ testRule({
       description: "an element nested under another component still can't use the compound '&' shape",
       code: '.nav { &.card__title {} }',
       warnings: [{ message: messages.elementNotFullSelector('card__title') }],
+    },
+    {
+      description: 'a chain rooted in a plain class-compound (no "&") is not an ampersand chain',
+      code: '.card { .card.card--featured .card__title {} }',
+      warnings: [{ message: messages.elementNotFullSelector('card__title') }],
+    },
+    {
+      description: 'the chain only extends one hop — a second hop past the ampersand root still needs its own rule',
+      code: '.card { &.card--featured .wrapper .card__title {} }',
+      warnings: [{ message: messages.elementNotFullSelector('card__title') }],
+    },
+    {
+      description: 'an ampersand-chained element with no real ancestor rule at all is still flagged',
+      code: '&.card--featured .card__title {}',
+      warnings: [
+        { message: messages.modifierNotNestedDirectly('card--featured', 'card') },
+        { message: messages.elementNotNested('card__title', 'card') },
+      ],
     },
     {
       description: 'modifier written as a plain full selector instead of a compound "&" selector',
@@ -263,11 +308,20 @@ testRule({
       description: "weak accepts another block's element customized from within a component tree",
       code: '.panel { .panel__header { .accordion__marker {} } }',
     },
+    {
+      description: 'weak accepts an element addressed via an ampersand-modifier chain (no regression)',
+      code: '.card { &.card--featured .card__title {} }',
+    },
   ],
   reject: [
     {
       description: 'weak still flags an element written flat, with no ancestor at all',
       code: '.card__title {}',
+      warnings: [{ message: messages.elementNotNestedAnywhere('card__title', 'card') }],
+    },
+    {
+      description: 'weak still flags an ampersand-chained element with no real ancestor rule at all',
+      code: '&.card--featured .card__title {}',
       warnings: [{ message: messages.elementNotNestedAnywhere('card__title', 'card') }],
     },
     {

@@ -26,22 +26,28 @@ const messages = stylelint.utils.ruleMessages(ruleName, {
     `Expected modifier ".${className}" to be nested directly inside ".${targetName}" via native CSS nesting`,
 });
 
-// A rule "defines" a class when its selector targets exactly that class — bare (`.block`) or as
-// part of a class-only compound (`.block.block--mod`); either way, everything nested inside can
-// only ever match elements that carry the class.
+// A rule "defines" a class when its selector targets exactly that class — bare (`.block`), as
+// part of a class-only compound (`.block.block--mod`), or reached via a chained hop off an
+// ampersand compound (`&.block--mod .block`, itself equivalent to nesting one level deeper).
+// Either way, everything nested inside can only ever match elements that carry the class.
 function ruleDefinesClass(ruleNode: Rule, className: string): boolean {
   return ruleNode.selectors.some((selector) =>
     getClassNodes(selector).some(
       (node) =>
         node.name === className &&
         !isInsideNonSubjectPseudo(node) &&
-        (node.nestingShape === 'bare' || node.nestingShape === 'class-compound'),
+        (node.nestingShape === 'bare' ||
+          node.nestingShape === 'class-compound' ||
+          node.nestingShape === 'chained'),
     ),
   );
 }
 
 function isCompoundedWith(classNode: ClassNode, className: string): boolean {
-  return classNode.nestingShape === 'class-compound' && classNode.compoundClassNames!.includes(className);
+  return (
+    (classNode.nestingShape === 'class-compound' || classNode.nestingShape === 'chained') &&
+    (classNode.compoundClassNames ?? []).includes(className)
+  );
 }
 
 // Pseudo-classes whose arguments only filter the subject — a class inside them is a match
@@ -105,9 +111,11 @@ function checkRequireNesting(root: Root, context: RuleContext, mode: RequireNest
 
     // An element may be compounded with its own modifiers (.block__el.block__el--mod) — the
     // modifier check above covers those siblings; the element itself still needs block nesting.
+    // This applies whether the element is the leading compound ('class-compound') or reached via
+    // a chained hop ('chained', e.g. `&.block--mod .block__el.block__el--mod`).
     const isCompoundedWithOwnModifiers =
-      classNode.nestingShape === 'class-compound' &&
-      classNode.compoundClassNames!.every((name) =>
+      (classNode.nestingShape === 'class-compound' || classNode.nestingShape === 'chained') &&
+      (classNode.compoundClassNames ?? []).every((name) =>
         name.startsWith(classNode.name + context.separatorOptions.modifierSeparator),
       );
 

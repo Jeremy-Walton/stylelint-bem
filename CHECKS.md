@@ -56,7 +56,7 @@ BEM has one element level. `.block__element__other` is invalid — flatten to `.
 
 Elements and modifiers must be defined via native CSS nesting rather than written flat, and modifiers must always be paired with what they modify.
 
-- Elements: full selector nested via native CSS nesting — never written flat at the top level. In `strict` mode the element must be nested (at any depth) inside its own block's rule — `.block { .block__el { } }`; a `.block.block--mod` compound rule counts as the block rule. In `weak` mode any ancestor rule counts (see Strictness below). No `&__el` concatenation shorthand, and no compound `&` shape. The element may carry its own modifiers in the same compound (`.block__el.block__el--mod`).
+- Elements: full selector nested via native CSS nesting — never written flat at the top level. In `strict` mode the element must be nested (at any depth) inside its own block's rule — `.block { .block__el { } }`; a `.block.block--mod` compound rule counts as the block rule. In `weak` mode any ancestor rule counts (see Strictness below). No `&__el` concatenation shorthand, and no compound `&` shape — except one hop past a leading `&`(+modifier) compound, e.g. `&.block--mod .block__el { }`, which flattens what would otherwise be a level of native nesting (`&.block--mod { .block__el { } }`) into one selector and is treated the same way. The element may carry its own modifiers in the same compound (`.block__el.block__el--mod`, and likewise `&.block--mod .block__el.block__el--mod`).
 - Modifiers: paired with what they modify — either a compound `&` selector directly under it (`.block { &.block--mod { } }`), or compounded directly with it in one selector (`.block.block--mod { }`). Both are equivalent: the modifier can never apply without its target. The direct-compound form needs no ancestor at all, so it's valid at the top level, even in `strict` mode. A `.block.block--mod` compound rule counts as the target's rule for the `&` form.
 - Element modifiers: same two forms — `&.block__el--mod` under `.block__el`, or `.block__el.block__el--mod` (the element part still needs to be nested somewhere itself).
 
@@ -75,6 +75,12 @@ Classes inside the arguments of a filtering pseudo-class — `:has()`, `:not()`,
 
 /* valid — modifier compounded directly with its target */
 .card.card--featured { }
+
+/* valid — element addressed via a chain off an ampersand-modifier compound, flattened into one
+   selector; equivalent to `.card { &.card--ready { .card__title { } } }` */
+.card {
+  &.card--ready .card__title { }
+}
 
 /* invalid — element defined at top level (both modes) */
 .card { }
