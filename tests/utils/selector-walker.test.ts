@@ -62,32 +62,111 @@ describe('getClassNodes', () => {
     ]);
   });
 
-  it('classifies a class compound that includes a tag as other', () => {
+  it('ignores a tag compounded with a single class, treating it as bare', () => {
+    expect(getClassNodes('x-icon.widget-panel__body-icon')).toEqual([
+      { name: 'widget-panel__body-icon', sourceIndex: 6, nestingShape: 'bare' },
+    ]);
+  });
+
+  it('ignores a tag compounded with multiple classes, treating it as class-compound', () => {
     expect(getClassNodes('div.card.card--featured')).toEqual([
-      { name: 'card', sourceIndex: 3, nestingShape: 'other' },
-      { name: 'card--featured', sourceIndex: 8, nestingShape: 'other' },
+      { name: 'card', sourceIndex: 3, nestingShape: 'class-compound', compoundClassNames: ['card--featured'] },
+      {
+        name: 'card--featured',
+        sourceIndex: 8,
+        nestingShape: 'class-compound',
+        compoundClassNames: ['card'],
+      },
     ]);
   });
 
-  it('classifies a class compound that includes "&" alongside other classes as other', () => {
+  it('ignores an id compounded with a class, treating it as bare', () => {
+    expect(getClassNodes('#unique.card__title')).toEqual([
+      { name: 'card__title', sourceIndex: 7, nestingShape: 'bare' },
+    ]);
+  });
+
+  it('ignores a universal selector compounded with a class, treating it as bare', () => {
+    expect(getClassNodes('*.card__title')).toEqual([
+      { name: 'card__title', sourceIndex: 1, nestingShape: 'bare' },
+    ]);
+  });
+
+  it('ignores a tag in a chain root, treating it the same as the class-only root', () => {
+    expect(getClassNodes('x-icon.card--featured .card__title')).toEqual([
+      { name: 'card--featured', sourceIndex: 6, nestingShape: 'bare' },
+      {
+        name: 'card__title',
+        sourceIndex: 22,
+        nestingShape: 'chained',
+        chainRootHasAmpersand: false,
+        chainRootClassNames: ['card--featured'],
+      },
+    ]);
+  });
+
+  it('classifies a class compound that includes "&" alongside other classes as ampersand, listing the sibling class names', () => {
     expect(getClassNodes('&.card.card--featured')).toEqual([
-      { name: 'card', sourceIndex: 1, nestingShape: 'other' },
-      { name: 'card--featured', sourceIndex: 6, nestingShape: 'other' },
+      { name: 'card', sourceIndex: 1, nestingShape: 'ampersand', compoundClassNames: ['card--featured'] },
+      { name: 'card--featured', sourceIndex: 6, nestingShape: 'ampersand', compoundClassNames: ['card'] },
     ]);
   });
 
-  it('classifies a class compound preceded by a combinator as other', () => {
+  it('lists every sibling class of a three-modifier ampersand compound', () => {
+    expect(getClassNodes('&.alert--muted.alert--warning.alert--pulsing')).toEqual([
+      {
+        name: 'alert--muted',
+        sourceIndex: 1,
+        nestingShape: 'ampersand',
+        compoundClassNames: ['alert--warning', 'alert--pulsing'],
+      },
+      {
+        name: 'alert--warning',
+        sourceIndex: 14,
+        nestingShape: 'ampersand',
+        compoundClassNames: ['alert--muted', 'alert--pulsing'],
+      },
+      {
+        name: 'alert--pulsing',
+        sourceIndex: 29,
+        nestingShape: 'ampersand',
+        compoundClassNames: ['alert--muted', 'alert--warning'],
+      },
+    ]);
+  });
+
+  it('classifies a class compound preceded by a combinator as chained, exposing the root classes', () => {
     expect(getClassNodes('.wrapper .card.card--featured')).toEqual([
       { name: 'wrapper', sourceIndex: 0, nestingShape: 'bare' },
-      { name: 'card', sourceIndex: 9, nestingShape: 'other' },
-      { name: 'card--featured', sourceIndex: 14, nestingShape: 'other' },
+      {
+        name: 'card',
+        sourceIndex: 9,
+        nestingShape: 'chained',
+        compoundClassNames: ['card--featured'],
+        chainRootHasAmpersand: false,
+        chainRootClassNames: ['wrapper'],
+      },
+      {
+        name: 'card--featured',
+        sourceIndex: 14,
+        nestingShape: 'chained',
+        compoundClassNames: ['card'],
+        chainRootHasAmpersand: false,
+        chainRootClassNames: ['wrapper'],
+      },
     ]);
   });
 
   it('reports source indices across combinators', () => {
     expect(getClassNodes('.card > .card__title')).toEqual([
       { name: 'card', sourceIndex: 0, nestingShape: 'bare' },
-      { name: 'card__title', sourceIndex: 8, nestingShape: 'other' },
+      {
+        name: 'card__title',
+        sourceIndex: 8,
+        nestingShape: 'chained',
+        chainRootHasAmpersand: false,
+        chainRootClassNames: ['card'],
+      },
     ]);
   });
 
@@ -116,10 +195,16 @@ describe('getClassNodes', () => {
     ]);
   });
 
-  it('classifies a class preceded by a descendant combinator as other', () => {
+  it('classifies a class preceded by a descendant combinator as chained, exposing the root classes', () => {
     expect(getClassNodes('.wrapper .card__title')).toEqual([
       { name: 'wrapper', sourceIndex: 0, nestingShape: 'bare' },
-      { name: 'card__title', sourceIndex: 9, nestingShape: 'other' },
+      {
+        name: 'card__title',
+        sourceIndex: 9,
+        nestingShape: 'chained',
+        chainRootHasAmpersand: false,
+        chainRootClassNames: ['wrapper'],
+      },
     ]);
   });
 
@@ -144,12 +229,26 @@ describe('getClassNodes', () => {
   it('classifies a class after an ampersand-rooted compound as chained', () => {
     expect(getClassNodes('&.card--featured .card__title')).toEqual([
       { name: 'card--featured', sourceIndex: 1, nestingShape: 'ampersand' },
-      { name: 'card__title', sourceIndex: 17, nestingShape: 'chained' },
+      {
+        name: 'card__title',
+        sourceIndex: 17,
+        nestingShape: 'chained',
+        chainRootHasAmpersand: true,
+        chainRootClassNames: ['card--featured'],
+      },
     ]);
   });
 
   it('classifies a class after a bare ampersand root as chained', () => {
-    expect(getClassNodes('& .card__title')).toEqual([{ name: 'card__title', sourceIndex: 2, nestingShape: 'chained' }]);
+    expect(getClassNodes('& .card__title')).toEqual([
+      {
+        name: 'card__title',
+        sourceIndex: 2,
+        nestingShape: 'chained',
+        chainRootHasAmpersand: true,
+        chainRootClassNames: [],
+      },
+    ]);
   });
 
   it('lists own-modifier sibling classes for a chained element', () => {
@@ -160,17 +259,21 @@ describe('getClassNodes', () => {
         sourceIndex: 17,
         nestingShape: 'chained',
         compoundClassNames: ['card__title--large'],
+        chainRootHasAmpersand: true,
+        chainRootClassNames: ['card--featured'],
       },
       {
         name: 'card__title--large',
         sourceIndex: 29,
         nestingShape: 'chained',
         compoundClassNames: ['card__title'],
+        chainRootHasAmpersand: true,
+        chainRootClassNames: ['card--featured'],
       },
     ]);
   });
 
-  it('does not classify a class after a non-ampersand-rooted compound as chained', () => {
+  it('also classifies a class after a plain (non-ampersand) class-compound root as chained', () => {
     expect(getClassNodes('.card.card--featured .card__title')).toEqual([
       { name: 'card', sourceIndex: 0, nestingShape: 'class-compound', compoundClassNames: ['card--featured'] },
       {
@@ -179,15 +282,67 @@ describe('getClassNodes', () => {
         nestingShape: 'class-compound',
         compoundClassNames: ['card'],
       },
-      { name: 'card__title', sourceIndex: 21, nestingShape: 'other' },
+      {
+        name: 'card__title',
+        sourceIndex: 21,
+        nestingShape: 'chained',
+        chainRootHasAmpersand: false,
+        chainRootClassNames: ['card', 'card--featured'],
+      },
     ]);
   });
 
-  it('only extends the chain one hop past the ampersand root', () => {
+  it('only extends the chain one hop past the root, regardless of ampersand', () => {
     expect(getClassNodes('&.card--featured .wrapper .card__title')).toEqual([
       { name: 'card--featured', sourceIndex: 1, nestingShape: 'ampersand' },
-      { name: 'wrapper', sourceIndex: 17, nestingShape: 'chained' },
+      {
+        name: 'wrapper',
+        sourceIndex: 17,
+        nestingShape: 'chained',
+        chainRootHasAmpersand: true,
+        chainRootClassNames: ['card--featured'],
+      },
       { name: 'card__title', sourceIndex: 26, nestingShape: 'other' },
+    ]);
+  });
+
+  it('classifies a class after a single-class, non-ampersand root as chained (the block-literal case)', () => {
+    expect(getClassNodes('.survey-form .survey-form__questions')).toEqual([
+      { name: 'survey-form', sourceIndex: 0, nestingShape: 'bare' },
+      {
+        name: 'survey-form__questions',
+        sourceIndex: 13,
+        nestingShape: 'chained',
+        chainRootHasAmpersand: false,
+        chainRootClassNames: ['survey-form'],
+      },
+    ]);
+  });
+
+  it('tolerates a pseudo-class attached to a chain root, e.g. :first-child', () => {
+    expect(getClassNodes('.stepper__item:first-child .stepper__item-marker')).toEqual([
+      { name: 'stepper__item', sourceIndex: 0, nestingShape: 'bare' },
+      {
+        name: 'stepper__item-marker',
+        sourceIndex: 27,
+        nestingShape: 'chained',
+        chainRootHasAmpersand: false,
+        chainRootClassNames: ['stepper__item'],
+      },
+    ]);
+  });
+
+  it('tolerates a pseudo-class with an argument attached to a chain root, e.g. :has()', () => {
+    expect(getClassNodes('.stepper__item:has(+ .separator-line) .stepper__item-marker')).toEqual([
+      { name: 'stepper__item', sourceIndex: 0, nestingShape: 'bare' },
+      { name: 'separator-line', sourceIndex: 21, nestingShape: 'other', enclosingPseudos: [':has'] },
+      {
+        name: 'stepper__item-marker',
+        sourceIndex: 38,
+        nestingShape: 'chained',
+        chainRootHasAmpersand: false,
+        chainRootClassNames: ['stepper__item'],
+      },
     ]);
   });
 });

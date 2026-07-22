@@ -45,6 +45,52 @@ testRule({
       code: '.card { &.card--featured, &.card--compact {} }',
     },
     {
+      description: 'two modifiers of the same block compounded together via "&" — each pairs with the other',
+      code: '.card { &.card--dark.card--featured {} }',
+    },
+    {
+      description: 'three modifiers of the same block compounded together via "&"',
+      code: '.card { &.card--dark.card--featured.card--pulsing {} }',
+    },
+    {
+      description: 'two modifiers compounded via "&", with a nested element inside',
+      code: '.card { &.card--dark.card--featured { .card__title {} } }',
+    },
+    {
+      description: 'the exact reported case: a block with several single- and multi-modifier compound rules',
+      code: `
+        .alert {
+          align-items: start;
+
+          &.alert--banner {
+            text-decoration: none;
+          }
+
+          &.alert--padded {
+            padding: var(--op-space-large);
+          }
+
+          &.alert--muted.alert--warning {
+            background-color: var(--op-color-alerts-warning-plus-seven);
+            color: var(--op-color-alerts-warning-on-plus-eight);
+
+            .alert__icon {
+              color: var(--op-color-alerts-warning-base);
+            }
+          }
+
+          &.alert--muted.alert--danger {
+            background-color: var(--op-color-alerts-danger-plus-seven);
+            color: var(--op-color-alerts-danger-on-plus-eight);
+
+            .alert__icon {
+              color: var(--op-color-alerts-danger-base);
+            }
+          }
+        }
+      `,
+    },
+    {
       description: 'element-modifier compound-nested directly under its element, itself nested in its block',
       code: '.card { .card__title { &.card__title--large {} } }',
     },
@@ -65,6 +111,11 @@ testRule({
       code: '.nav { .card.card--featured {} }',
     },
     {
+      description:
+        'block+modifier compound preceded by a combinator — still paired directly, regardless of what precedes it',
+      code: '.wrapper .card.card--featured {}',
+    },
+    {
       description: 'element compounded with its own modifier, nested in its block',
       code: '.card { .card__title.card__title--large {} }',
     },
@@ -82,7 +133,7 @@ testRule({
     },
     {
       description: 'classes referenced inside :has() are match conditions, not definitions',
-      code: '.card { .card__title { &:has(> .form-group--full-width, > .markdown) {} } }',
+      code: '.card { .card__title { &:has(> .field-group--full-width, > .rich-text) {} } }',
     },
     {
       description: 'a class referenced inside :has() at the top level is not checked',
@@ -107,9 +158,9 @@ testRule({
     {
       description: 'the exact reported case: element reached via an ampersand-modifier chain, with a nested modifier inside',
       code: `
-        .animated-reveal {
-          &.animated-reveal--ready .animated-reveal__area {
-            &.animated-reveal__area--open {
+        .expander {
+          &.expander--ready .expander__area {
+            &.expander__area--open {
               @starting-style {
                 block-size: 0;
               }
@@ -123,6 +174,132 @@ testRule({
         'element and its own modifier both compounded together in the same chained hop — both are accepted',
       code: '.card { &.card--featured .card__title.card__title--large {} }',
     },
+    {
+      description:
+        'element addressed via a chain rooted in its own literal block name (no "&"), self-contained with no real ancestor at all',
+      code: '.card .card__title {}',
+    },
+    {
+      description: 'a block-literal chain is valid inside a transparent @media with no real ancestor rule',
+      code: '@media (max-width: 768px) { .card .card__title {} }',
+    },
+    {
+      description: 'a modifier compound-nested directly inside a block-literal chained element rule',
+      code: '.card .card__title { &.card__title--large {} }',
+    },
+    {
+      description: 'the exact reported case: a block-literal chained element under a transparent @media, with siblings',
+      code: `
+        @media (max-width: 768px) {
+          .survey-form .survey-form__questions {
+            padding-inline-start: 0px;
+
+            .field-group {
+              grid-column: 1 / 3;
+            }
+
+            .rich-text {
+              &.rich-text--full-width {
+                margin-inline-start: 0px;
+              }
+            }
+
+            .address-fields {
+              grid-template-columns: 1fr;
+
+              .field-group {
+                grid-column: 1;
+              }
+            }
+          }
+        }
+      `,
+    },
+    {
+      description: 'a block-literal chain root compounded with a modifier of the block',
+      code: '.card.card--dark .card__title {}',
+    },
+    {
+      description:
+        'a block-literal chain root written with the modifier first still names the block among its classes',
+      code: '.card--dark.card .card__title {}',
+    },
+    {
+      description: 'a chain root that is a sibling element of the same block, not the bare block itself',
+      code: '.stepper { .stepper__item .stepper__item-marker {} }',
+    },
+    {
+      description: 'a pseudo-class attached to a chain root does not disqualify it (:first-child)',
+      code: '.stepper { .stepper__item:first-child .stepper__item-marker {} }',
+    },
+    {
+      description: 'a pseudo-class with an argument attached to a chain root does not disqualify it (:has())',
+      code: '.stepper { .stepper__item:has(+ .separator-line) .stepper__item-marker {} }',
+    },
+    {
+      description: 'the exact reported case: two chained rules, each rooted in a sibling element with a pseudo-class',
+      code: `
+        .stepper {
+          --_sw-activity-marker-inline-size: var(--op-space-large);
+          --_sw-activity-marker-block-size: var(--op-space-x-small);
+
+          display: grid;
+          gap: var(--op-space-small);
+          position: relative;
+
+          .stepper__item:first-child .stepper__item-marker {
+            anchor-name: --sw-first-activity-marker;
+          }
+
+          .stepper__item:has(+ .separator-line) .stepper__item-marker {
+            anchor-name: --sw-last-activity-marker;
+          }
+        }
+      `,
+    },
+    {
+      description: 'a tag compounded with an element does not disqualify it (e.g. a custom element)',
+      code: '.card { x-icon.card__icon {} }',
+    },
+    {
+      description: 'a tag compounded with an element and its own modifier does not disqualify it',
+      code: '.card { x-icon.card__icon.card__icon--large {} }',
+    },
+    {
+      description: 'a tag compounded with a modifier directly on its target does not disqualify it',
+      code: 'x-icon.card.card--featured {}',
+    },
+    {
+      description: 'a tag in a chain root does not disqualify the chain',
+      code: 'x-icon.card .card__title {}',
+    },
+    {
+      description:
+        'the exact reported case: a custom element tag compounded with a nested BEM element (wrapped in its real block, as in the reporter\'s full file)',
+      code: `
+        .widget-panel {
+          .widget-panel__body {
+            display: flex;
+            flex-direction: column;
+            gap: var(--op-space-large);
+            min-inline-size: 60%;
+            align-self: center;
+
+            x-icon.widget-panel__body-icon {
+              --sw-icon-font-size: var(--_sw-kiosk-icon-size);
+              --sw-icon-color: transparent;
+
+              &::part(icon) {
+                background: var(--sw-linear-gradient);
+                background-size: 100%;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+              }
+            }
+          }
+        }
+      `,
+    },
   ],
   reject: [
     {
@@ -134,6 +311,12 @@ testRule({
       description: 'element nested under an unrelated block — strict requires the block itself',
       code: '.nav { .card__title {} }',
       warnings: [{ message: messages.elementNotNested('card__title', 'card') }],
+    },
+    {
+      description:
+        'a chain rooted in a sibling element is not self-contained the way a bare-block root is — the root element still needs its own nesting',
+      code: '.stepper__item .stepper__item-marker {}',
+      warnings: [{ message: messages.elementNotNested('stepper__item', 'stepper') }],
     },
     {
       description: "strict flags another block's element customized from within a component tree",
@@ -180,8 +363,8 @@ testRule({
       warnings: [{ message: messages.elementNotFullSelector('card__title') }],
     },
     {
-      description: 'a chain rooted in a plain class-compound (no "&") is not an ampersand chain',
-      code: '.card { .card.card--featured .card__title {} }',
+      description: 'a chain rooted in a plain class-compound whose classes do not name the expected block',
+      code: '.card { .wrapper.other-class .card__title {} }',
       warnings: [{ message: messages.elementNotFullSelector('card__title') }],
     },
     {
@@ -216,9 +399,12 @@ testRule({
       ],
     },
     {
-      description: 'block+modifier compound preceded by a combinator is not a leading compound',
-      code: '.wrapper .card.card--featured {}',
-      warnings: [{ message: messages.modifierNotCompound('card--featured', 'card') }],
+      description: "modifiers of different blocks compounded via '&' — not a legitimate pairing",
+      code: '.card { &.card--featured.nav--active {} }',
+      warnings: [
+        { message: messages.modifierNotCompound('card--featured', 'card') },
+        { message: messages.modifierNotCompound('nav--active', 'nav') },
+      ],
     },
     {
       description: 'element compounded with an unrelated class',
@@ -312,6 +498,10 @@ testRule({
       description: 'weak accepts an element addressed via an ampersand-modifier chain (no regression)',
       code: '.card { &.card--featured .card__title {} }',
     },
+    {
+      description: 'weak accepts a block-literal chained element with no real ancestor at all (no regression)',
+      code: '.card .card__title {}',
+    },
   ],
   reject: [
     {
@@ -323,6 +513,11 @@ testRule({
       description: 'weak still flags an ampersand-chained element with no real ancestor rule at all',
       code: '&.card--featured .card__title {}',
       warnings: [{ message: messages.elementNotNestedAnywhere('card__title', 'card') }],
+    },
+    {
+      description: "weak still flags a chained element whose root doesn't name its expected block",
+      code: '.wrapper .card__title {}',
+      warnings: [{ message: messages.elementNotFullSelector('card__title') }],
     },
     {
       description: 'weak still flags a modifier nested under the wrong ancestor',
