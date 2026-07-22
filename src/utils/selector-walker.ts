@@ -106,23 +106,51 @@ function analyzeNestingShape(classNode: parser.ClassName): ShapeAnalysis {
   };
 }
 
-function getClassNodes(selector: string): ClassNode[] {
+function collectClassNodes(container: parser.Root | parser.Selector): ClassNode[] {
   const classNodes: ClassNode[] = [];
 
-  parser((root) => {
-    root.walkClasses((classNode) => {
-      const enclosingPseudos = getEnclosingPseudos(classNode);
+  container.walkClasses((classNode) => {
+    const enclosingPseudos = getEnclosingPseudos(classNode);
 
-      classNodes.push({
-        name: classNode.value,
-        sourceIndex: classNode.sourceIndex,
-        ...analyzeNestingShape(classNode),
-        ...(enclosingPseudos.length > 0 ? { enclosingPseudos } : {}),
-      });
+    classNodes.push({
+      name: classNode.value,
+      sourceIndex: classNode.sourceIndex,
+      ...analyzeNestingShape(classNode),
+      ...(enclosingPseudos.length > 0 ? { enclosingPseudos } : {}),
     });
+  });
+
+  return classNodes;
+}
+
+function getClassNodes(selector: string): ClassNode[] {
+  let classNodes: ClassNode[] = [];
+
+  parser((root) => {
+    classNodes = collectClassNodes(root);
   }).processSync(selector);
 
   return classNodes;
+}
+
+interface SelectorGroup {
+  selector: string;
+  classNodes: ClassNode[];
+}
+
+// Parses a rule's full (possibly comma-separated) selector in one pass, grouped back into its
+// top-level selectors — each group's classNodes carry sourceIndex relative to the whole string,
+// so callers reporting a warning position don't need to re-anchor per selector themselves.
+function getClassNodesBySelectorGroup(fullSelector: string): SelectorGroup[] {
+  const groups: SelectorGroup[] = [];
+
+  parser((root) => {
+    root.each((selectorNode) => {
+      groups.push({ selector: String(selectorNode).trim(), classNodes: collectClassNodes(selectorNode) });
+    });
+  }).processSync(fullSelector);
+
+  return groups;
 }
 
 function getClassNames(selector: string): string[] {
@@ -151,4 +179,4 @@ function isPureAmpersandPseudoSelector(selector: string): boolean {
 }
 
 export type { ClassNode, NestingShape };
-export { getClassNames, getClassNodes, isPureAmpersandPseudoSelector };
+export { getClassNames, getClassNodes, getClassNodesBySelectorGroup, isPureAmpersandPseudoSelector };

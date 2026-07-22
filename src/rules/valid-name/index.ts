@@ -1,9 +1,9 @@
 import stylelint from 'stylelint';
 import type { Root, Rule } from 'postcss';
 import { isKebabCase } from '../../utils/bem-parser.js';
-import { bemBaseOptionsSchema, resolveSeparatorOptions } from '../../utils/rule-options.js';
+import { bemBaseOptionsSchema } from '../../utils/rule-options.js';
 import type { BemBaseOptions } from '../../utils/rule-options.js';
-import { forEachClass, reportBemViolation, validateBemOptions } from '../shared/rule-context.js';
+import { createBemRule, forEachClass, reportBemViolation } from '../shared/rule-context.js';
 import type { RuleContext } from '../shared/rule-context.js';
 import type { ClassNode } from '../../utils/selector-walker.js';
 
@@ -43,33 +43,13 @@ function checkValidName(root: Root, context: RuleContext): void {
   }
 }
 
-const rule: stylelint.Rule<true, BemBaseOptions> = (primary, secondaryOptions) => {
-  return async (root, result) => {
-    const validOptions = validateBemOptions(
-      result,
-      ruleName,
-      primary,
-      [true],
-      secondaryOptions,
-      bemBaseOptionsSchema,
-    );
-
-    if (!validOptions) return;
-
-    const context: RuleContext = {
-      ruleName,
-      result,
-      separatorOptions: resolveSeparatorOptions(secondaryOptions),
-      ignoreSelectors: secondaryOptions?.ignoreSelectors,
-      messages,
-    };
-
-    checkValidName(root, context);
-  };
-};
-
-rule.ruleName = ruleName;
-rule.messages = messages;
+const rule = createBemRule<true, BemBaseOptions>({
+  ruleName,
+  messages,
+  possiblePrimary: [true],
+  secondarySchema: bemBaseOptionsSchema,
+  check: checkValidName,
+});
 
 export default stylelint.createPlugin(ruleName, rule);
 export { messages, ruleName };

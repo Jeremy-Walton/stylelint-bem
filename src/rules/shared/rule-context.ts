@@ -3,8 +3,9 @@ import type { PostcssResult, RuleMessage, RuleOptions, RuleOptionsPossible } fro
 import type { Root, Rule } from 'postcss';
 import { parseClassName } from '../../utils/bem-parser.js';
 import type { BemSeparatorOptions, ParsedBemClassName } from '../../utils/bem-parser.js';
-import { isIgnoredSelector } from '../../utils/rule-options.js';
-import { getClassNodes } from '../../utils/selector-walker.js';
+import { isIgnoredSelector, resolveSeparatorOptions } from '../../utils/rule-options.js';
+import type { BemBaseOptions } from '../../utils/rule-options.js';
+import { getClassNodesBySelectorGroup } from '../../utils/selector-walker.js';
 import type { ClassNode } from '../../utils/selector-walker.js';
 
 interface RuleContext {
@@ -23,21 +24,12 @@ function forEachClass(
   visit: (ruleNode: Rule, classNode: ClassNode, parsed: ParsedBemClassName) => void,
 ): void {
   root.walkRules((ruleNode) => {
-    // getClassNodes(selector) resets sourceIndex to 0 per comma-split selector; re-anchoring it to
-    // each selector's real offset in ruleNode.selector keeps reported warning positions correct.
-    // searchIndex advances so a repeated selector text resolves to its own occurrence.
-    let searchIndex = 0;
-
-    for (const selector of ruleNode.selectors) {
-      const selectorStart = ruleNode.selector.indexOf(selector, searchIndex);
-      const offset = selectorStart === -1 ? 0 : selectorStart;
-      searchIndex = offset + selector.length;
-
+    for (const { selector, classNodes } of getClassNodesBySelectorGroup(ruleNode.selector)) {
       if (isIgnoredSelector(selector, context.ignoreSelectors)) continue;
 
-      for (const classNode of getClassNodes(selector)) {
+      for (const classNode of classNodes) {
         const parsed = parseClassName(classNode.name, context.separatorOptions);
-        visit(ruleNode, { ...classNode, sourceIndex: offset + classNode.sourceIndex }, parsed);
+        visit(ruleNode, classNode, parsed);
       }
     }
   });
@@ -60,6 +52,25 @@ function isDefinedOrKnown(context: RuleContext, block: string, targetClassName: 
     (context.knownBlocks?.has(block) ?? false) ||
     (context.definedClassIndex?.has(targetClassName) ?? false)
   );
+}
+
+// Shared shape behind no-orphaned-element/no-orphaned-modifier: flag a BEM segment whose target
+// isn't defined anywhere in the project.
+function checkOrphan(
+  root: Root,
+  context: RuleContext,
+  isCandidate: (parsed: ParsedBemClassName) => boolean,
+  targetOf: (parsed: ParsedBemClassName, separatorOptions: BemSeparatorOptions) => string,
+  message: RuleMessage,
+): void {
+  forEachBemClass(root, context, (ruleNode, classNode, parsed) => {
+    if (!isCandidate(parsed)) return;
+
+    const target = targetOf(parsed, context.separatorOptions);
+    if (isDefinedOrKnown(context, parsed.block, target)) return;
+
+    reportBemViolation(context, ruleNode, classNode, message, classNode.name, target);
+  });
 }
 
 function reportBemViolation(
@@ -102,5 +113,58 @@ function validateBemOptions(
   });
 }
 
+// The common shape behind every stylelint-bem rule: validate options, resolve a RuleContext, then
+// run the rule-specific check. buildContext supplies anything beyond the base RuleContext fields
+// (e.g. an orphan rule's knownBlocks/definedClassIndex); primary is passed through to check
+// unparsed so rules with a non-boolean primary option (e.g. require-nesting's mode) can resolve it
+// themselves.
+function createBemRule<Primary, Options extends BemBaseOptions>(config: {
+  ruleName: string;
+  messages: Record<string, RuleMessage>;
+  possiblePrimary: RuleOptions['possible'];
+  secondarySchema: Record<string, RuleOptionsPossible[]>;
+  buildContext?: (secondaryOptions: Options | undefined, root: Root) => Promise<Partial<RuleContext>> | Partial<RuleContext>;
+  check: (root: Root, context: RuleContext, primary: Primary) => void;
+}): stylelint.Rule<Primary, Options> {
+  const rule: stylelint.Rule<Primary, Options> = (primary, secondaryOptions) => async (root, result) => {
+    const validOptions = validateBemOptions(
+      result,
+      config.ruleName,
+      primary,
+      config.possiblePrimary,
+      secondaryOptions,
+      config.secondarySchema,
+    );
+
+    if (!validOptions) return;
+
+    const extraContext = (await config.buildContext?.(secondaryOptions, root)) ?? {};
+
+    const context: RuleContext = {
+      ruleName: config.ruleName,
+      result,
+      separatorOptions: resolveSeparatorOptions(secondaryOptions),
+      ignoreSelectors: secondaryOptions?.ignoreSelectors,
+      messages: config.messages,
+      ...extraContext,
+    };
+
+    config.check(root, context, primary);
+  };
+
+  rule.ruleName = config.ruleName;
+  rule.messages = config.messages;
+
+  return rule;
+}
+
 export type { RuleContext };
-export { forEachClass, forEachBemClass, reportBemViolation, isDefinedOrKnown, validateBemOptions };
+export {
+  forEachClass,
+  forEachBemClass,
+  reportBemViolation,
+  isDefinedOrKnown,
+  checkOrphan,
+  validateBemOptions,
+  createBemRule,
+};

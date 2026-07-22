@@ -37,26 +37,6 @@ function buildSeparatorPattern(separators: SeparatorToken[]): RegExp {
   return new RegExp(separators.map((separator) => escapeRegExp(separator.value)).join('|'), 'g');
 }
 
-interface CompiledSeparators {
-  tokens: SeparatorToken[];
-  pattern: RegExp;
-}
-
-const compiledSeparatorsCache = new WeakMap<BemSeparatorOptions, CompiledSeparators>();
-
-// Caches per options object so the regex isn't recompiled for every class name in a lint run.
-function getCompiledSeparators(options: BemSeparatorOptions): CompiledSeparators {
-  let compiled = compiledSeparatorsCache.get(options);
-
-  if (!compiled) {
-    const tokens = getSeparatorTokens(options);
-    compiled = { tokens, pattern: buildSeparatorPattern(tokens) };
-    compiledSeparatorsCache.set(options, compiled);
-  }
-
-  return compiled;
-}
-
 function separatorTypeFor(value: string, separators: SeparatorToken[]): BemSegmentSeparator {
   return separators.find((separator) => separator.value === value)!.type;
 }
@@ -78,7 +58,8 @@ function bemSegments(
 }
 
 function parseClassName(className: string, options: BemSeparatorOptions): ParsedBemClassName {
-  const { tokens: separators, pattern } = getCompiledSeparators(options);
+  const separators = getSeparatorTokens(options);
+  const pattern = buildSeparatorPattern(separators);
   const separatorMatches = [...className.matchAll(pattern)];
 
   if (separatorMatches.length === 0) {

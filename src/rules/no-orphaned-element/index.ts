@@ -1,18 +1,9 @@
 import stylelint from 'stylelint';
 import type { Root } from 'postcss';
 import { buildDefinedClassIndexForFile } from '../../utils/project-scan.js';
-import {
-  bemOrphanOptionsSchema,
-  resolveKnownBlocks,
-  resolveSeparatorOptions,
-} from '../../utils/rule-options.js';
+import { bemOrphanOptionsSchema, resolveKnownBlocks } from '../../utils/rule-options.js';
 import type { BemOrphanOptions } from '../../utils/rule-options.js';
-import {
-  forEachBemClass,
-  isDefinedOrKnown,
-  reportBemViolation,
-  validateBemOptions,
-} from '../shared/rule-context.js';
+import { checkOrphan, createBemRule } from '../shared/rule-context.js';
 import type { RuleContext } from '../shared/rule-context.js';
 
 const ruleName = 'stylelint-bem/no-orphaned-element';
@@ -23,43 +14,26 @@ const messages = stylelint.utils.ruleMessages(ruleName, {
 });
 
 function checkNoOrphanedElement(root: Root, context: RuleContext): void {
-  forEachBemClass(root, context, (ruleNode, classNode, parsed) => {
-    if (parsed.segments[0]?.separator !== 'element') return;
-    if (isDefinedOrKnown(context, parsed.block, parsed.block)) return;
-
-    reportBemViolation(context, ruleNode, classNode, messages.orphanedElement, classNode.name, parsed.block);
-  });
+  checkOrphan(
+    root,
+    context,
+    (parsed) => parsed.segments[0]?.separator === 'element',
+    (parsed) => parsed.block,
+    messages.orphanedElement,
+  );
 }
 
-const rule: stylelint.Rule<true, BemOrphanOptions> = (primary, secondaryOptions) => {
-  return async (root, result) => {
-    const validOptions = validateBemOptions(
-      result,
-      ruleName,
-      primary,
-      [true],
-      secondaryOptions,
-      bemOrphanOptionsSchema,
-    );
-
-    if (!validOptions) return;
-
-    const context: RuleContext = {
-      ruleName,
-      result,
-      separatorOptions: resolveSeparatorOptions(secondaryOptions),
-      ignoreSelectors: secondaryOptions?.ignoreSelectors,
-      knownBlocks: resolveKnownBlocks(secondaryOptions),
-      definedClassIndex: await buildDefinedClassIndexForFile(root),
-      messages,
-    };
-
-    checkNoOrphanedElement(root, context);
-  };
-};
-
-rule.ruleName = ruleName;
-rule.messages = messages;
+const rule = createBemRule<true, BemOrphanOptions>({
+  ruleName,
+  messages,
+  possiblePrimary: [true],
+  secondarySchema: bemOrphanOptionsSchema,
+  buildContext: async (secondaryOptions, root) => ({
+    knownBlocks: resolveKnownBlocks(secondaryOptions),
+    definedClassIndex: await buildDefinedClassIndexForFile(root),
+  }),
+  check: checkNoOrphanedElement,
+});
 
 export default stylelint.createPlugin(ruleName, rule);
 export { messages, ruleName };
