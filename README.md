@@ -20,9 +20,9 @@ The plugin ships five independent rules, one per check, each enabled and configu
 - `stylelint-bem/no-double-nested-element`
 - `stylelint-bem/require-nesting`
 
-### Quick start: the recommended config
+### Quick start
 
-The fastest way to turn everything on with sane defaults is to extend the recommended config in your
+The fastest way to turn everything on with sensible defaults is to extend the recommended config in your
 `.stylelintrc.json` (or equivalent):
 
 ```json
@@ -36,7 +36,7 @@ needed. See [Presets](#presets) below.
 
 ### Manual setup
 
-To enable rules individually (e.g. to turn only some on, or to pass options), register the plugin
+To configure rules individually, register the plugin
 yourself and list each rule under `rules`:
 
 ```json
@@ -52,7 +52,7 @@ yourself and list each rule under `rules`:
 }
 ```
 
-Any subset of the five rules can be listed — omit a rule to leave it off entirely. Each rule follows the
+Any subset of the five rules can be listed. Omit a rule to leave it off entirely. Each rule follows the
 standard stylelint two-arg shape: a primary option (usually just `true`), and an optional secondary
 options object for that rule's settings.
 
