@@ -1,11 +1,11 @@
 import stylelint from 'stylelint';
 import type { Root, Rule } from 'postcss';
+import parser from 'postcss-selector-parser';
 import { formatClassName, lastSegment, parentClassName, parseClassName } from '../../utils/bem-parser.js';
 import type { BemSegment, BemSeparatorOptions, ParsedBemClassName } from '../../utils/bem-parser.js';
-import { findAncestorRules } from '../../utils/rule-ancestors.js';
 import { bemBaseOptionsSchema, isString } from '../../utils/rule-options.js';
 import type { BemBaseOptions } from '../../utils/rule-options.js';
-import { getClassNodes, isPureAmpersandPseudoSelector } from '../../utils/selector-walker.js';
+import { getClassNodes } from '../../utils/selector-walker.js';
 import type { ClassNode } from '../../utils/selector-walker.js';
 import { createBemRule, forEachBemClass, reportBemViolation } from '../shared/rule-context.js';
 import type { RuleContext } from '../shared/rule-context.js';
@@ -52,6 +52,19 @@ function isLegitimateChain(classNode: ClassNode, ownBlock: string, separatorOpti
 // e.g. `td`, `td:first-child`.
 function isClasslessRule(ruleNode: Rule): boolean {
   return ruleNode.selectors.every((selector) => getClassNodes(selector).length === 0);
+}
+
+// At-rules (@media, @supports, ...) are transparent — skipped without counting as a nesting level.
+function findAncestorRules(node: Rule): Rule[] {
+  const rules: Rule[] = [];
+  let current = node.parent;
+
+  while (current && current.type !== 'root') {
+    if (current.type === 'rule') rules.push(current as Rule);
+    current = current.parent;
+  }
+
+  return rules;
 }
 
 // `&` compounded on a classless ancestor (e.g. `td { &.block__el {} }`) resolves to something
@@ -107,6 +120,27 @@ function isPureAmpersandModifierCompoundOf(
       )
     );
   });
+}
+
+// True when a selector is only the nesting selector `&`, optionally compounded with pseudo-classes
+// (e.g. `&:has(.other)`, `&:hover`) — the subject is still whatever `&` resolves to, so this is
+// transparent for nesting purposes the same way `@media` is.
+function isPureAmpersandPseudoSelector(selector: string): boolean {
+  let result = false;
+
+  parser((root) => {
+    const first = root.first;
+    if (!first) return;
+
+    const nodes = first.nodes;
+    if (nodes.length === 0 || nodes.some((node) => node.type === 'combinator')) return;
+
+    result =
+      nodes.some((node) => node.type === 'nesting') &&
+      nodes.every((node) => node.type === 'nesting' || node.type === 'pseudo');
+  }).processSync(selector);
+
+  return result;
 }
 
 // A modifier must be nested directly under the rule defining its target, tolerating any number of
@@ -323,4 +357,4 @@ const rule = createBemRule<true | RequireNestingMode, BemBaseOptions>({
 });
 
 export default stylelint.createPlugin(ruleName, rule);
-export { messages, ruleName };
+export { isPureAmpersandPseudoSelector, messages, ruleName };

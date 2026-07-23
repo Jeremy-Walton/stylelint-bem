@@ -157,26 +157,5 @@ function getClassNames(selector: string): string[] {
   return getClassNodes(selector).map((classNode) => classNode.name);
 }
 
-// True when a selector is only the nesting selector `&`, optionally compounded with pseudo-classes
-// (e.g. `&:has(.other)`, `&:hover`) — the subject is still whatever `&` resolves to, so this is
-// transparent for nesting purposes the same way `@media` is.
-function isPureAmpersandPseudoSelector(selector: string): boolean {
-  let result = false;
-
-  parser((root) => {
-    const first = root.first;
-    if (!first) return;
-
-    const nodes = first.nodes;
-    if (nodes.length === 0 || nodes.some((node) => node.type === 'combinator')) return;
-
-    result =
-      nodes.some((node) => node.type === 'nesting') &&
-      nodes.every((node) => node.type === 'nesting' || node.type === 'pseudo');
-  }).processSync(selector);
-
-  return result;
-}
-
 export type { ClassNode, NestingShape };
-export { getClassNames, getClassNodes, getClassNodesBySelectorGroup, isPureAmpersandPseudoSelector };
+export { getClassNames, getClassNodes, getClassNodesBySelectorGroup };
