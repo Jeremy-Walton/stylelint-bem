@@ -89,7 +89,7 @@ Additional secondary option, `stylelint-bem/no-orphaned-element` and `stylelint-
 `stylelint-bem/require-nesting`'s primary option is `true` (equivalent to `"strict"`), `"strict"`, or
 `"weak"` — see `CHECKS.md` for what `weak` relaxes.
 
-Only class names using the configured separators are checked — non-BEM selectors are never flagged. No rule provides autofix.
+Only class names that participate in BEM are checked: those using the configured separators, plus a bare block name that a BEM element or modifier in the same file confirms is a block (see `CHECKS.md`). Genuinely non-BEM selectors — utility classes, globals, third-party overrides — are never flagged. No rule provides autofix.
 
 `stylelint-bem/no-orphaned-element` and `stylelint-bem/no-orphaned-modifier` look for a block's definition across the whole project, not just the file being linted — see `CHECKS.md` for how the project root is determined.
 

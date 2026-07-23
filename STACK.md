@@ -38,7 +38,7 @@ Technology choices, as decided.
 
 - `src/index.ts` — plugin entry exporting all five rules.
 - `src/rules/<check-name>/index.ts` — one directory per rule (`valid-name`, `no-orphaned-element`, `no-orphaned-modifier`, `no-double-nested-element`, `require-nesting`): option validation/resolution and check logic together, since each rule is exactly one check now.
-- `src/rules/shared/rule-context.ts` — shared helpers (`forEachBemClass`, `reportBemViolation`, `isDefinedOrKnown`) and the `RuleContext` type, reused by all five rules.
+- `src/rules/shared/rule-context.ts` — shared helpers (`forEachClass`, `forEachBemClass`, `reportBemViolation`, `checkOrphan`, `createOrphanRule`, `createBemRule`) and the `RuleContext` type, reused by all five rules.
 - `src/utils/` — shared BEM name parser, selector walker, per-file block/defined-class index, project-wide file scan.
 - `src/configs/recommended.ts` — shareable config.
 - Secondary options, all five rules: `elementSeparator` (default `__`), `modifierSeparator` (default `--`), `ignoreSelectors`. `knownBlocks` additionally on the two orphan rules. `require-nesting`'s primary option carries its `strict`/`weak` mode instead of a boolean.

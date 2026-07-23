@@ -14,7 +14,7 @@ The full check list and semantics live in `CHECKS.md`. More checks may follow.
 
 ## What it deliberately doesn't do
 
-- **It doesn't police every selector.** Only class names that are *trying* to be BEM (they use BEM separators) are checked. Utility classes, global styles, and third-party overrides are left alone.
+- **It doesn't police every selector.** Only class names participating in BEM are checked — those using BEM separators, plus a bare block name that a BEM element or modifier elsewhere confirms is a block. Utility classes, global styles, and third-party overrides are left alone.
 - **It doesn't rewrite your code.** Rules report problems; restructuring is the author's call.
 - **It doesn't impose one dialect.** Separators and other conventions are configurable to fit a team's flavor of BEM.
 

@@ -321,7 +321,7 @@ testRule({
     },
     {
       description:
-        'a chain rooted in a sibling element is not self-contained the way a bare-block root is — the root element still needs its own nesting',
+        'a chain rooted in a sibling element of the same block is self-contained, so the marker is accepted; only the flat root element itself is flagged for lacking nesting',
       code: '.stepper__item .stepper__item-marker {}',
       warnings: [{ message: messages.elementNotNested('stepper__item', 'stepper') }],
     },

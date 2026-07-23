@@ -8,10 +8,16 @@ Central list of checks this plugin runs, and their semantics. Other documents sh
 
 Every part (block, element, modifier) of a BEM class must be kebab-case: lowercase letters/digits separated by single dashes.
 
+A bare class with no separators is normally left alone — it's indistinguishable from a plain/utility class. The one exception: when a BEM element or modifier elsewhere in the **same file** names it as their block (e.g. `.my-block__title`), that bare class is confirmed to be a block, so its own name is checked for kebab-case too. A non-kebab-case block is therefore flagged both at its definition (`.myBlock { }`) and at every element/modifier that uses it (`.myBlock__title { }`).
+
 ```css
 /* invalid — parts are not kebab-case */
 .myBlock--active { }
 .card__Title { }
+
+/* invalid — .myBlock__title confirms .myBlock is a block, so its name is checked too;
+   both the definition and the element are flagged */
+.myBlock { .myBlock__title { } }
 
 /* valid (assuming .my-block is defined) */
 .my-block--active { }
@@ -56,7 +62,7 @@ BEM has one element level. `.block__element__other` is invalid — flatten to `.
 
 Elements and modifiers must be defined via native CSS nesting rather than written flat, and modifiers must always be paired with what they modify.
 
-- Elements: full selector nested via native CSS nesting — never written flat at the top level. In `strict` mode the element must be nested (at any depth) inside its own block's rule — `.block { .block__el { } }`; a `.block.block--mod` compound rule counts as the block rule. In `weak` mode any ancestor rule counts (see Strictness below). No `&__el` concatenation shorthand, and no compound `&` shape — except one hop past a leading, clean root compound (classes, `&`, and/or pseudo-classes like `:first-child`/`:has(...)`, nothing else), e.g. `&.block--mod .block__el { }`, `.block .block__el { }`, or `.block__sibling:first-child .block__el { }`, which flattens what would otherwise be a level of native nesting into one selector and is treated the same way. A root using `&` is always trusted (it refers to whatever the real ancestor turns out to be, validated separately); a root written as literal classes must share the element's own **block** with at least one of its classes — the bare block itself (`.wrapper .block__el` does **not** count — `wrapper` isn't part of `block`'s family) or another element/modifier of the same block (`.block__sibling .block__el` counts too, e.g. two DOM-adjacent elements of one component) — and, being self-sufficient, satisfies the "nested" requirement even with zero real ancestor rules *when the root is the bare block itself* (e.g. a whole file that's just `.block .block__el { }` inside a transparent `@media`); a root that's itself a BEM element still needs its own real nesting or ancestor, same as any other element. An ampersand root always still needs a real ancestor for `&` to mean anything. The element may carry its own modifiers in the same compound (`.block__el.block__el--mod`, and likewise `.block .block__el.block__el--mod`).
+- Elements: full selector nested via native CSS nesting — never written flat at the top level. In `strict` mode the element must be nested (at any depth) inside its own block's rule — `.block { .block__el { } }`; a `.block.block--mod` compound rule counts as the block rule. In `weak` mode any ancestor rule counts (see Strictness below). No compound `&` shape — except one hop past a leading, clean root compound (classes, `&`, and/or pseudo-classes like `:first-child`/`:has(...)`, nothing else), e.g. `&.block--mod .block__el { }`, `.block .block__el { }`, or `.block__sibling:first-child .block__el { }`, which flattens what would otherwise be a level of native nesting into one selector and is treated the same way. A root using `&` is always trusted (it refers to whatever the real ancestor turns out to be, validated separately); a root written as literal classes must share the element's own **block** with at least one of its classes — the bare block itself (`.wrapper .block__el` does **not** count — `wrapper` isn't part of `block`'s family) or another element/modifier of the same block (`.block__sibling .block__el` counts too, e.g. two DOM-adjacent elements of one component) — and, being self-sufficient, satisfies the "nested" requirement even with zero real ancestor rules, whether the root is the bare block itself or a sibling element/modifier of the same block (e.g. a whole file that's just `.block .block__el { }` or `.block__sibling .block__el { }` inside a transparent `@media`). An ampersand root always still needs a real ancestor for `&` to mean anything. The element may carry its own modifiers in the same compound (`.block__el.block__el--mod`, and likewise `.block .block__el.block__el--mod`).
 - Modifiers: paired with what they modify — either a compound `&` selector directly under it (`.block { &.block--mod { } }`), or compounded directly with it in one selector (`.block.block--mod { }`). Both are equivalent: the modifier can never apply without its target. The direct-compound form needs no ancestor at all — and no legitimate root, either, since the pairing is complete on its own — so it's valid at the top level or behind an unrelated combinator prefix (`.wrapper .block.block--mod { }`), even in `strict` mode. A `.block.block--mod` compound rule counts as the target's rule for the `&` form. Two or more modifiers of the **same block** can also be compounded together directly with `&` — `&.block--mod1.block--mod2 { }` — since they're peers, not parent/child: each is independently and safely paired with whatever `&` resolves to, equivalent to `&.block--mod1 { &.block--mod2 { } }`. A sibling from a *different* block (`&.block--mod.other--mod`) is not a legitimate pairing and is still flagged.
 - Element modifiers: same two forms — `&.block__el--mod` under `.block__el`, or `.block__el.block__el--mod` (the element part still needs to be nested somewhere itself, or reached via a legitimate chain as above).
 
@@ -94,8 +100,9 @@ A tag, id, or universal selector compounded alongside a class — e.g. a custom 
    so this needs no wrapping `.card { }` rule at all, even in `strict` mode */
 .card .card__title { }
 
-/* valid — root is a sibling element of the same block (not the bare block), with a pseudo-class;
-   the outer `.card { }` is required here since the root itself is a BEM element, not a bare block */
+/* valid — root is a sibling element of the same block; the chain makes `.card__title` self-sufficient
+   (no wrapper needed for it). The outer `.card { }` here nests the flat root `.card__header`, which
+   would otherwise be flagged on its own — drop the wrapper and only `.card__header` is reported */
 .card {
   .card__header:first-child .card__title { }
 }
