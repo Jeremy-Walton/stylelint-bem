@@ -38,3 +38,13 @@ A stylelint plugin (npm package `stylelint-bem`) that validates BEM methodology 
 - Violation messages should name the offending class and, where relevant, the missing/expected parent (e.g. the block a modifier is orphaned from).
 - Prefer `postcss-selector-parser` for selector work over regex on raw selector strings.
 - Non-BEM selectors and anything in the configured ignore list must never be flagged.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues (Jeremy-Walton/stylelint-bem), via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context layout — `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
