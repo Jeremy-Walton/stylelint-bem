@@ -1,8 +1,7 @@
 import stylelint from 'stylelint';
 import type { Root, Rule } from 'postcss';
 import parser from 'postcss-selector-parser';
-import { blockOf, formatClassName, isModifierOf, lastSegment, parentClassName } from '../../utils/bem-parser.js';
-import type { BemSegment, BemSeparatorOptions, ParsedBemClassName } from '../../utils/bem-parser.js';
+import type { BemNaming, BemSegment, ParsedBemClassName } from '../../utils/bem-parser.js';
 import { bemBaseOptionsSchema, isString } from '../../utils/rule-options.js';
 import type { BemBaseOptions } from '../../utils/rule-options.js';
 import { getClassNodes } from '../../utils/selector-walker.js';
@@ -33,12 +32,12 @@ const messages = stylelint.utils.ruleMessages(ruleName, {
 // classless (no BEM identity to conflict with, e.g. `summary .block__el`), or shares the class's
 // own block (e.g. `.block .block__el`, two elements of one block nested for DOM reasons). An
 // unrelated root (`.wrapper .card__title`) is none of these and falls through to false.
-function isLegitimateChain(classNode: ClassNode, ownBlock: string, separatorOptions: BemSeparatorOptions): boolean {
+function isLegitimateChain(classNode: ClassNode, ownBlock: string, naming: BemNaming): boolean {
   const root = classNode.chainRoot;
   if (!root) return false;
   if (root.kind !== 'classes') return true;
 
-  return root.names.some((rootClassName) => blockOf(rootClassName, separatorOptions) === ownBlock);
+  return root.names.some((rootClassName) => naming.blockOf(rootClassName) === ownBlock);
 }
 
 // True when a rule's selector(s) carry no class at all (only tag/id/pseudo) — pure DOM structure,
@@ -71,7 +70,7 @@ function isAmpersandOnClasslessAncestor(ruleNode: Rule): boolean {
 // A rule "defines" a class when its selector targets exactly that class: bare, class-compounded,
 // via a legitimate chain, or ampersand-compounded on a classless ancestor — in every case,
 // anything nested inside can only ever match elements carrying the class.
-function ruleDefinesClass(ruleNode: Rule, className: string, separatorOptions: BemSeparatorOptions): boolean {
+function ruleDefinesClass(ruleNode: Rule, className: string, naming: BemNaming): boolean {
   return ruleNode.selectors.some((selector) =>
     getClassNodes(selector).some(
       (node) =>
@@ -79,7 +78,7 @@ function ruleDefinesClass(ruleNode: Rule, className: string, separatorOptions: B
         !isInsideNonSubjectPseudo(node) &&
         (node.nestingShape === 'bare' ||
           node.nestingShape === 'class-compound' ||
-          isLegitimateChain(node, blockOf(node.name, separatorOptions), separatorOptions) ||
+          isLegitimateChain(node, naming.blockOf(node.name), naming) ||
           (node.nestingShape === 'ampersand' && isAmpersandOnClasslessAncestor(ruleNode))),
     ),
   );
@@ -92,14 +91,14 @@ function ruleDefinesClass(ruleNode: Rule, className: string, separatorOptions: B
 function isPureAmpersandModifierCompoundOf(
   ruleNode: Rule,
   targetName: string,
-  separatorOptions: BemSeparatorOptions,
+  naming: BemNaming,
 ): boolean {
   return ruleNode.selectors.every((selector) => {
     const nodes = getClassNodes(selector);
     return (
       nodes.length > 0 &&
       nodes.every(
-        (node) => node.nestingShape === 'ampersand' && isModifierOf(node.name, targetName, separatorOptions),
+        (node) => node.nestingShape === 'ampersand' && naming.isModifierOf(node.name, targetName),
       )
     );
   });
@@ -133,11 +132,11 @@ function isPureAmpersandPseudoSelector(selector: string): boolean {
 function isDirectlyNestedUnderTarget(
   ancestorRules: Rule[],
   targetName: string,
-  separatorOptions: BemSeparatorOptions,
+  naming: BemNaming,
 ): boolean {
   for (const ancestor of ancestorRules) {
-    if (ruleDefinesClass(ancestor, targetName, separatorOptions)) return true;
-    if (isPureAmpersandModifierCompoundOf(ancestor, targetName, separatorOptions)) continue;
+    if (ruleDefinesClass(ancestor, targetName, naming)) return true;
+    if (isPureAmpersandModifierCompoundOf(ancestor, targetName, naming)) continue;
     if (ancestor.selectors.every(isPureAmpersandPseudoSelector)) continue;
     return false;
   }
@@ -153,9 +152,9 @@ function isCompoundedWith(classNode: ClassNode, className: string): boolean {
 
 // Two+ modifiers of the same block compounded with `&` (e.g. `&.block--mod1.block--mod2`) are
 // peers, not parent/child — legitimate as long as every sibling shares the class's own block.
-function isSameBlockCompound(classNode: ClassNode, ownBlock: string, separatorOptions: BemSeparatorOptions): boolean {
+function isSameBlockCompound(classNode: ClassNode, ownBlock: string, naming: BemNaming): boolean {
   return (classNode.compoundClassNames ?? []).every(
-    (name) => blockOf(name, separatorOptions) === ownBlock,
+    (name) => naming.blockOf(name) === ownBlock,
   );
 }
 
@@ -191,7 +190,7 @@ function checkModifierNesting(check: NestingCheck): void {
 
   if (
     classNode.nestingShape !== 'ampersand' ||
-    !isSameBlockCompound(classNode, parsed.block, context.separatorOptions)
+    !isSameBlockCompound(classNode, parsed.block, context.naming)
   ) {
     reportBemViolation(
       context,
@@ -204,7 +203,7 @@ function checkModifierNesting(check: NestingCheck): void {
     return;
   }
 
-  if (!isDirectlyNestedUnderTarget(ancestorRules, expectedParentName, context.separatorOptions)) {
+  if (!isDirectlyNestedUnderTarget(ancestorRules, expectedParentName, context.naming)) {
     reportBemViolation(
       context,
       ruleNode,
@@ -224,7 +223,7 @@ function isValidElementShape(check: NestingCheck): boolean {
   const { ruleNode, classNode, parsed, context } = check;
 
   const isCompoundedWithOwnModifiers = (classNode.compoundClassNames ?? []).every((name) =>
-    isModifierOf(name, classNode.name, context.separatorOptions),
+    context.naming.isModifierOf(name, classNode.name),
   );
 
   const isElementAmpersandOnClasslessAncestor =
@@ -236,7 +235,7 @@ function isValidElementShape(check: NestingCheck): boolean {
     classNode.nestingShape === 'bare' ||
     isElementAmpersandOnClasslessAncestor ||
     ((classNode.nestingShape === 'class-compound' ||
-      isLegitimateChain(classNode, parsed.block, context.separatorOptions)) &&
+      isLegitimateChain(classNode, parsed.block, context.naming)) &&
       isCompoundedWithOwnModifiers)
   );
 }
@@ -253,11 +252,9 @@ function reportInvalidElementShape(check: NestingCheck): void {
   const isSingleAmpersandCompound = classNode.nestingShape === 'ampersand' && !classNode.compoundClassNames;
 
   if (isSingleAmpersandCompound) {
-    const modifierSuggestion = formatClassName(
-      parsed.block,
-      [{ separator: 'modifier', name: finalSegment.name }],
-      context.separatorOptions,
-    );
+    const modifierSuggestion = context.naming.format(parsed.block, [
+      { separator: 'modifier', name: finalSegment.name },
+    ]);
     reportBemViolation(
       context,
       ruleNode,
@@ -305,7 +302,7 @@ function checkElementNesting(check: NestingCheck): void {
 
   const isNested =
     isSelfContainedChain ||
-    ancestorRules.some((ancestor) => ruleDefinesClass(ancestor, expectedParentName, context.separatorOptions));
+    ancestorRules.some((ancestor) => ruleDefinesClass(ancestor, expectedParentName, context.naming));
 
   if (!isNested) {
     reportBemViolation(context, ruleNode, classNode, messages.elementNotNested, classNode.name, expectedParentName);
@@ -316,13 +313,13 @@ function checkRequireNesting(root: Root, context: RuleContext, mode: RequireNest
   forEachBemClass(root, context, (ruleNode, classNode, parsed) => {
     if (isInsideNonSubjectPseudo(classNode)) return;
 
-    const finalSegment = lastSegment(parsed)!;
+    const finalSegment = context.naming.lastSegment(parsed)!;
     const check: NestingCheck = {
       ruleNode,
       classNode,
       parsed,
       finalSegment,
-      expectedParentName: parentClassName(parsed, context.separatorOptions),
+      expectedParentName: context.naming.parentClassName(parsed),
       ancestorRules: findAncestorRules(ruleNode),
       context,
       mode,

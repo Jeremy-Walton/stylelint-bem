@@ -1,8 +1,8 @@
 import stylelint from 'stylelint';
 import type { PostcssResult, RuleMessage, RuleOptions, RuleOptionsPossible } from 'stylelint';
 import type { Root, Rule } from 'postcss';
-import { parseClassName } from '../../utils/bem-parser.js';
-import type { BemSeparatorOptions, ParsedBemClassName } from '../../utils/bem-parser.js';
+import { bemNaming } from '../../utils/bem-parser.js';
+import type { BemNaming, BemSeparatorOptions, ParsedBemClassName } from '../../utils/bem-parser.js';
 import { buildDefinedClassIndexForFile } from '../../utils/project-scan.js';
 import { bemOrphanOptionsSchema, isIgnoredSelector, resolveKnownBlocks, resolveSeparatorOptions } from '../../utils/rule-options.js';
 import type { BemBaseOptions, BemOrphanOptions } from '../../utils/rule-options.js';
@@ -13,6 +13,7 @@ interface RuleContext {
   ruleName: string;
   result: PostcssResult;
   separatorOptions: BemSeparatorOptions;
+  naming: BemNaming;
   ignoreSelectors?: (string | RegExp)[];
   definedClassIndex?: Set<string>;
   knownBlocks?: Set<string>;
@@ -29,7 +30,7 @@ function forEachClass(
       if (isIgnoredSelector(selector, context.ignoreSelectors)) continue;
 
       for (const classNode of classNodes) {
-        const parsed = parseClassName(classNode.name, context.separatorOptions);
+        const parsed = context.naming.parse(classNode.name);
         visit(ruleNode, classNode, parsed);
       }
     }
@@ -61,13 +62,13 @@ function checkOrphan(
   root: Root,
   context: RuleContext,
   isCandidate: (parsed: ParsedBemClassName) => boolean,
-  targetOf: (parsed: ParsedBemClassName, separatorOptions: BemSeparatorOptions) => string,
+  targetOf: (parsed: ParsedBemClassName, naming: BemNaming) => string,
   message: RuleMessage,
 ): void {
   forEachBemClass(root, context, (ruleNode, classNode, parsed) => {
     if (!isCandidate(parsed)) return;
 
-    const target = targetOf(parsed, context.separatorOptions);
+    const target = targetOf(parsed, context.naming);
     if (isDefinedOrKnown(context, parsed.block, target)) return;
 
     reportBemViolation(context, ruleNode, classNode, message, classNode.name, target);
@@ -161,11 +162,13 @@ function createBemRule<Primary, Options extends BemBaseOptions>(config: {
     if (!validOptions) return;
 
     const extraContext = (await config.buildContext?.(secondaryOptions, root)) ?? {};
+    const separatorOptions = resolveSeparatorOptions(secondaryOptions);
 
     const context: RuleContext = {
       ruleName: config.ruleName,
       result,
-      separatorOptions: resolveSeparatorOptions(secondaryOptions),
+      separatorOptions,
+      naming: bemNaming(separatorOptions),
       ignoreSelectors: secondaryOptions?.ignoreSelectors,
       messages: config.messages,
       ...extraContext,

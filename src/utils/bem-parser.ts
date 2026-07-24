@@ -118,5 +118,35 @@ function isModifierOf(className: string, parentName: string, options: BemSeparat
   return parentClassName(parsed, options) === parentName;
 }
 
-export type { BemSeparatorOptions, BemSegmentSeparator, BemSegment, ParsedBemClassName };
-export { parseClassName, isKebabCase, formatClassName, lastSegment, parentClassName, blockOf, isModifierOf };
+interface BemNaming {
+  parse(className: string): ParsedBemClassName;
+  format(block: string, segments: BemSegment[]): string;
+  blockOf(className: string): string;
+  isModifierOf(className: string, parentName: string): boolean;
+  parentClassName(parsed: ParsedBemClassName): string;
+  lastSegment(parsed: ParsedBemClassName): BemSegment | undefined;
+}
+
+// Binds BemSeparatorOptions once so callers stop re-passing it at every call site.
+function bemNaming(options: BemSeparatorOptions): BemNaming {
+  return {
+    parse: (className) => parseClassName(className, options),
+    format: (block, segments) => formatClassName(block, segments, options),
+    blockOf: (className) => blockOf(className, options),
+    isModifierOf: (className, parentName) => isModifierOf(className, parentName, options),
+    parentClassName: (parsed) => parentClassName(parsed, options),
+    lastSegment,
+  };
+}
+
+export type { BemSeparatorOptions, BemSegmentSeparator, BemSegment, ParsedBemClassName, BemNaming };
+export {
+  parseClassName,
+  isKebabCase,
+  formatClassName,
+  lastSegment,
+  parentClassName,
+  blockOf,
+  isModifierOf,
+  bemNaming,
+};

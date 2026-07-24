@@ -1,6 +1,6 @@
 import stylelint from 'stylelint';
 import type { Root } from 'postcss';
-import { lastSegment, parentClassName } from '../../utils/bem-parser.js';
+import { lastSegment } from '../../utils/bem-parser.js';
 import { checkOrphan, createOrphanRule } from '../shared/rule-context.js';
 import type { RuleContext } from '../shared/rule-context.js';
 
@@ -16,7 +16,7 @@ function checkNoOrphanedModifier(root: Root, context: RuleContext): void {
     root,
     context,
     (parsed) => lastSegment(parsed)?.separator === 'modifier',
-    (parsed, separatorOptions) => parentClassName(parsed, separatorOptions),
+    (parsed, naming) => naming.parentClassName(parsed),
     messages.orphanedModifier,
   );
 }
