@@ -27,7 +27,7 @@ The fastest way to turn everything on with sensible defaults is to extend the re
 
 ```json
 {
-  "extends": ["stylelint-bem/config/recommended"]
+  "extends": ["@jeremywalton/stylelint-bem/config/recommended"]
 }
 ```
 
@@ -41,7 +41,7 @@ yourself and list each rule under `rules`:
 
 ```json
 {
-  "plugins": ["stylelint-bem"],
+  "plugins": ["@jeremywalton/stylelint-bem"],
   "rules": {
     "stylelint-bem/valid-name": true,
     "stylelint-bem/no-orphaned-element": true,
@@ -58,7 +58,7 @@ options object for that rule's settings.
 
 ```json
 {
-  "plugins": ["stylelint-bem"],
+  "plugins": ["@jeremywalton/stylelint-bem"],
   "rules": {
     "stylelint-bem/no-orphaned-element": [true, { "knownBlocks": ["react-select"] }],
     "stylelint-bem/require-nesting": ["weak", { "ignoreSelectors": [".js-*"] }]
@@ -95,5 +95,5 @@ Only class names that participate in BEM are checked: those using the configured
 
 ## Presets
 
-- **recommended** (`stylelint-bem/config/recommended`) — enables all five rules with their defaults. See
+- **recommended** (`@jeremywalton/stylelint-bem/config/recommended`) — enables all five rules with their defaults. See
   [Quick start](#quick-start-the-recommended-config) above for how to extend it.
