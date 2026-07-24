@@ -5,7 +5,7 @@ A stylelint plugin that validates BEM methodology in CSS written with native nes
 ## Installation
 
 ```sh
-npm install --save-dev stylelint-bem
+npm install --save-dev @jeremywalton/stylelint-bem
 ```
 
 Requires `stylelint` `^16.0.0` or `^17.0.0` as a peer dependency.
