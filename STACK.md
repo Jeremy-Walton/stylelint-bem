@@ -25,7 +25,8 @@ Technology choices, as decided.
 ## Build & tooling
 
 - **tsup** for build — chosen at scaffold time (Phase 0) for its minimal-config ESM + `.d.ts` output.
-- **GitHub Actions** CI: test + build (`.github/workflows/ci.yml`).
+- **Yarn (Berry)**, pinned via Corepack (`packageManager` field in `package.json`) — switched from npm 2026-07-24. `nodeLinker: node-modules` in `.yarnrc.yml` keeps a real `node_modules/` tree rather than PnP, for tooling compatibility. `yarn.lock` is the committed lockfile; `package-lock.json` is gone.
+- **GitHub Actions** CI: test + build (`.github/workflows/ci.yml`), `corepack enable` before install.
 - **Manual semver** for versioning (decided 2026-07-21, Phase 4) — no changesets tooling; bump `package.json`'s version and `CHANGELOG.md` by hand at publish time.
 
 ## Distribution

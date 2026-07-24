@@ -24,9 +24,9 @@ A stylelint plugin (npm package `stylelint-bem`) that validates BEM methodology 
 
 ## Commands
 
-- `npm test` — Vitest suite
-- `npm run build` — compile TS for publishing
-- `npm run typecheck` — `tsc --noEmit` across both `src/` and `tests/` (via `tsconfig.tests.json`)
+- `yarn test` — Vitest suite
+- `yarn build` — compile TS for publishing
+- `yarn typecheck` — `tsc --noEmit` across both `src/` and `tests/` (via `tsconfig.tests.json`)
 
 ## Layout (once scaffolded)
 

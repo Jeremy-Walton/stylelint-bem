@@ -16,16 +16,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+      - name: Enable corepack
+        run: corepack enable
       - name: Use Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '24.x'
-          cache: 'npm'
+          cache: 'yarn'
       - name: Install
-        run: npm ci
+        run: yarn install --immutable
       - name: Typecheck
-        run: npm run typecheck
+        run: yarn typecheck
       - name: Test
-        run: npm test
+        run: yarn test
       - name: Build
-        run: npm run build
+        run: yarn build
