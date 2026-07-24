@@ -5,18 +5,20 @@ on:
   release:
     types: [published]
 permissions:
-  contents: write
+  id-token: write  # Required for OIDC
+  contents: read
 jobs:
   build-npm:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v6
       - run: corepack enable
       - uses: actions/setup-node@v6
         with:
           node-version: '24.x'
-          cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false  # never use caching in release builds
       - run: yarn install --immutable
-      - run: yarn npm publish --access public
-        env:
-          YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: yarn build --if-present
+      - run: yarn test
+      - run: npm publish  # Or: npm stage publish
