@@ -1,6 +1,5 @@
 import stylelint from 'stylelint';
 import type { Root } from 'postcss';
-import { formatClassName, lastSegment } from '../../utils/bem-parser.js';
 import { bemBaseOptionsSchema } from '../../utils/rule-options.js';
 import type { BemBaseOptions } from '../../utils/rule-options.js';
 import { createBemRule, forEachBemClass, reportBemViolation } from '../shared/rule-context.js';
@@ -22,7 +21,7 @@ function checkNoDoubleNestedElement(root: Root, context: RuleContext): void {
       if (segment.separator !== 'element') continue;
 
       if (parsed.segments[i - 1]!.separator === 'element') {
-        const suggested = formatClassName(parsed.block, [lastSegment(parsed)!], context.separatorOptions);
+        const suggested = context.naming.format(parsed.block, [context.naming.lastSegment(parsed)!]);
         reportBemViolation(
           context,
           ruleNode,

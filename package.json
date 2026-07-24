@@ -1,5 +1,5 @@
 {
-  "name": "stylelint-bem",
+  "name": "@jeremywalton/stylelint-bem",
   "version": "0.1.0",
   "description": "A stylelint plugin that validates BEM methodology in CSS.",
   "type": "module",
@@ -39,14 +39,15 @@
     "Clean code",
     "Block",
     "Element",
-    "Modifier"
+    "Modifier",
+    "Stylelint"
   ],
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "tsup",
     "typecheck": "tsc --noEmit -p tsconfig.tests.json",
-    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+    "prepublishOnly": "yarn typecheck && yarn test && yarn build"
   },
   "peerDependencies": {
     "stylelint": "^16.0.0 || ^17.0.0"
@@ -62,6 +63,7 @@
     "stylelint": "^16.9.0",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
-    "vitest": "^2.1.0"
-  }
+    "vitest": "^4.1.10"
+  },
+  "packageManager": "yarn@4.17.1+sha512.ccbfabf7d7b6b32075088be9386fb9a2e00bb6887ef07fa56effabc890a56d53da1ccc4128d62db245fcbd3961b236d75335bdf7d5320ed6eafb7588b7ad4697"
 }

@@ -1,7 +1,7 @@
 import stylelint from 'stylelint';
 import { describe, expect, it } from 'vitest';
 import { testRule } from '@tests/test-utils/test-rule.js';
-import plugin, { messages, ruleName } from '@src/rules/require-nesting/index.js';
+import plugin, { isPureAmpersandPseudoSelector, messages, ruleName } from '@src/rules/require-nesting/index.js';
 
 testRule({
   plugin,
@@ -321,7 +321,7 @@ testRule({
     },
     {
       description:
-        'a chain rooted in a sibling element is not self-contained the way a bare-block root is — the root element still needs its own nesting',
+        'a chain rooted in a sibling element of the same block is self-contained, so the marker is accepted; only the flat root element itself is flagged for lacking nesting',
       code: '.stepper__item .stepper__item-marker {}',
       warnings: [{ message: messages.elementNotNested('stepper__item', 'stepper') }],
     },
@@ -650,5 +650,39 @@ describe(ruleName, () => {
     });
 
     expect(result.results[0]!.invalidOptionWarnings.length).toBeGreaterThan(0);
+  });
+});
+
+describe('isPureAmpersandPseudoSelector', () => {
+  it('accepts a bare ampersand with a single pseudo-class', () => {
+    expect(isPureAmpersandPseudoSelector('&:hover')).toBe(true);
+  });
+
+  it('accepts a bare ampersand with a pseudo-class that takes a selector argument', () => {
+    expect(isPureAmpersandPseudoSelector('&:has(.other)')).toBe(true);
+  });
+
+  it('accepts a bare ampersand with several chained pseudo-classes', () => {
+    expect(isPureAmpersandPseudoSelector('&:has(.other):hover')).toBe(true);
+  });
+
+  it('accepts a bare ampersand with no pseudo-class at all — a no-op wrapper, still the same subject', () => {
+    expect(isPureAmpersandPseudoSelector('&')).toBe(true);
+  });
+
+  it('rejects a class compounded alongside the ampersand, even with a pseudo-class present', () => {
+    expect(isPureAmpersandPseudoSelector('&.other-class:hover')).toBe(false);
+  });
+
+  it('rejects a selector with no ampersand at all', () => {
+    expect(isPureAmpersandPseudoSelector(':hover')).toBe(false);
+  });
+
+  it('rejects a chain (internal combinator), even one rooted in a bare ampersand', () => {
+    expect(isPureAmpersandPseudoSelector('&:hover .block__el')).toBe(false);
+  });
+
+  it('does not let a class inside the pseudo argument disqualify the selector', () => {
+    expect(isPureAmpersandPseudoSelector('&:has(.other, .thing)')).toBe(true);
   });
 });

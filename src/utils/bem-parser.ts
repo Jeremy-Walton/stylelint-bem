@@ -103,5 +103,50 @@ function parentClassName(parsed: ParsedBemClassName, options: BemSeparatorOption
   return formatClassName(parsed.block, parsed.segments.slice(0, -1), options);
 }
 
-export type { BemSeparatorOptions, BemSegmentSeparator, BemSegment, ParsedBemClassName };
-export { parseClassName, isKebabCase, formatClassName, lastSegment, parentClassName };
+// Well-defined even for non-BEM names — parseClassName treats the whole name as the block then.
+function blockOf(className: string, options: BemSeparatorOptions): string {
+  return parseClassName(className, options).block;
+}
+
+// True when className is itself a modifier of parentName, e.g. "block--mod" of "block", or
+// "block__el--mod" of "block__el".
+function isModifierOf(className: string, parentName: string, options: BemSeparatorOptions): boolean {
+  const parsed = parseClassName(className, options);
+  const finalSegment = lastSegment(parsed);
+  if (!finalSegment || finalSegment.separator !== 'modifier') return false;
+
+  return parentClassName(parsed, options) === parentName;
+}
+
+interface BemNaming {
+  parse(className: string): ParsedBemClassName;
+  format(block: string, segments: BemSegment[]): string;
+  blockOf(className: string): string;
+  isModifierOf(className: string, parentName: string): boolean;
+  parentClassName(parsed: ParsedBemClassName): string;
+  lastSegment(parsed: ParsedBemClassName): BemSegment | undefined;
+}
+
+// Binds BemSeparatorOptions once so callers stop re-passing it at every call site.
+function bemNaming(options: BemSeparatorOptions): BemNaming {
+  return {
+    parse: (className) => parseClassName(className, options),
+    format: (block, segments) => formatClassName(block, segments, options),
+    blockOf: (className) => blockOf(className, options),
+    isModifierOf: (className, parentName) => isModifierOf(className, parentName, options),
+    parentClassName: (parsed) => parentClassName(parsed, options),
+    lastSegment,
+  };
+}
+
+export type { BemSeparatorOptions, BemSegmentSeparator, BemSegment, ParsedBemClassName, BemNaming };
+export {
+  parseClassName,
+  isKebabCase,
+  formatClassName,
+  lastSegment,
+  parentClassName,
+  blockOf,
+  isModifierOf,
+  bemNaming,
+};

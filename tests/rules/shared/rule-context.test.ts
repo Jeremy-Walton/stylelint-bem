@@ -1,5 +1,6 @@
 import postcss from 'postcss';
 import { describe, expect, it } from 'vitest';
+import { bemNaming } from '@src/utils/bem-parser.js';
 import { forEachBemClass } from '@src/rules/shared/rule-context.js';
 import type { RuleContext } from '@src/rules/shared/rule-context.js';
 
@@ -10,6 +11,7 @@ function makeContext(overrides: Partial<RuleContext> = {}): RuleContext {
     ruleName: 'stylelint-bem/test',
     result: {} as RuleContext['result'],
     separatorOptions,
+    naming: bemNaming(separatorOptions),
     messages: {},
     ...overrides,
   };

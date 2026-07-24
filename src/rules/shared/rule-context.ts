@@ -1,10 +1,11 @@
 import stylelint from 'stylelint';
 import type { PostcssResult, RuleMessage, RuleOptions, RuleOptionsPossible } from 'stylelint';
 import type { Root, Rule } from 'postcss';
-import { parseClassName } from '../../utils/bem-parser.js';
-import type { BemSeparatorOptions, ParsedBemClassName } from '../../utils/bem-parser.js';
-import { isIgnoredSelector, resolveSeparatorOptions } from '../../utils/rule-options.js';
-import type { BemBaseOptions } from '../../utils/rule-options.js';
+import { bemNaming } from '../../utils/bem-parser.js';
+import type { BemNaming, BemSeparatorOptions, ParsedBemClassName } from '../../utils/bem-parser.js';
+import { buildDefinedClassIndexForFile } from '../../utils/project-scan.js';
+import { bemOrphanOptionsSchema, isIgnoredSelector, resolveKnownBlocks, resolveSeparatorOptions } from '../../utils/rule-options.js';
+import type { BemBaseOptions, BemOrphanOptions } from '../../utils/rule-options.js';
 import { getClassNodesBySelectorGroup } from '../../utils/selector-walker.js';
 import type { ClassNode } from '../../utils/selector-walker.js';
 
@@ -12,6 +13,7 @@ interface RuleContext {
   ruleName: string;
   result: PostcssResult;
   separatorOptions: BemSeparatorOptions;
+  naming: BemNaming;
   ignoreSelectors?: (string | RegExp)[];
   definedClassIndex?: Set<string>;
   knownBlocks?: Set<string>;
@@ -28,7 +30,7 @@ function forEachClass(
       if (isIgnoredSelector(selector, context.ignoreSelectors)) continue;
 
       for (const classNode of classNodes) {
-        const parsed = parseClassName(classNode.name, context.separatorOptions);
+        const parsed = context.naming.parse(classNode.name);
         visit(ruleNode, classNode, parsed);
       }
     }
@@ -60,16 +62,37 @@ function checkOrphan(
   root: Root,
   context: RuleContext,
   isCandidate: (parsed: ParsedBemClassName) => boolean,
-  targetOf: (parsed: ParsedBemClassName, separatorOptions: BemSeparatorOptions) => string,
+  targetOf: (parsed: ParsedBemClassName, naming: BemNaming) => string,
   message: RuleMessage,
 ): void {
   forEachBemClass(root, context, (ruleNode, classNode, parsed) => {
     if (!isCandidate(parsed)) return;
 
-    const target = targetOf(parsed, context.separatorOptions);
+    const target = targetOf(parsed, context.naming);
     if (isDefinedOrKnown(context, parsed.block, target)) return;
 
     reportBemViolation(context, ruleNode, classNode, message, classNode.name, target);
+  });
+}
+
+// The common shape behind no-orphaned-element/no-orphaned-modifier: both take only the `true`
+// primary option, share BemOrphanOptions' secondary schema, and resolve the same
+// knownBlocks/definedClassIndex context — only their messages and check function differ.
+function createOrphanRule(config: {
+  ruleName: string;
+  messages: Record<string, RuleMessage>;
+  check: (root: Root, context: RuleContext) => void;
+}): stylelint.Rule<true, BemOrphanOptions> {
+  return createBemRule<true, BemOrphanOptions>({
+    ruleName: config.ruleName,
+    messages: config.messages,
+    possiblePrimary: [true],
+    secondarySchema: bemOrphanOptionsSchema,
+    buildContext: async (secondaryOptions, root) => ({
+      knownBlocks: resolveKnownBlocks(secondaryOptions),
+      definedClassIndex: await buildDefinedClassIndexForFile(root),
+    }),
+    check: config.check,
   });
 }
 
@@ -139,11 +162,13 @@ function createBemRule<Primary, Options extends BemBaseOptions>(config: {
     if (!validOptions) return;
 
     const extraContext = (await config.buildContext?.(secondaryOptions, root)) ?? {};
+    const separatorOptions = resolveSeparatorOptions(secondaryOptions);
 
     const context: RuleContext = {
       ruleName: config.ruleName,
       result,
-      separatorOptions: resolveSeparatorOptions(secondaryOptions),
+      separatorOptions,
+      naming: bemNaming(separatorOptions),
       ignoreSelectors: secondaryOptions?.ignoreSelectors,
       messages: config.messages,
       ...extraContext,
@@ -159,12 +184,4 @@ function createBemRule<Primary, Options extends BemBaseOptions>(config: {
 }
 
 export type { RuleContext };
-export {
-  forEachClass,
-  forEachBemClass,
-  reportBemViolation,
-  isDefinedOrKnown,
-  checkOrphan,
-  validateBemOptions,
-  createBemRule,
-};
+export { forEachClass, forEachBemClass, reportBemViolation, checkOrphan, createOrphanRule, createBemRule };
