@@ -103,5 +103,20 @@ function parentClassName(parsed: ParsedBemClassName, options: BemSeparatorOption
   return formatClassName(parsed.block, parsed.segments.slice(0, -1), options);
 }
 
+// Well-defined even for non-BEM names — parseClassName treats the whole name as the block then.
+function blockOf(className: string, options: BemSeparatorOptions): string {
+  return parseClassName(className, options).block;
+}
+
+// True when className is itself a modifier of parentName, e.g. "block--mod" of "block", or
+// "block__el--mod" of "block__el".
+function isModifierOf(className: string, parentName: string, options: BemSeparatorOptions): boolean {
+  const parsed = parseClassName(className, options);
+  const finalSegment = lastSegment(parsed);
+  if (!finalSegment || finalSegment.separator !== 'modifier') return false;
+
+  return parentClassName(parsed, options) === parentName;
+}
+
 export type { BemSeparatorOptions, BemSegmentSeparator, BemSegment, ParsedBemClassName };
-export { parseClassName, isKebabCase, formatClassName, lastSegment, parentClassName };
+export { parseClassName, isKebabCase, formatClassName, lastSegment, parentClassName, blockOf, isModifierOf };

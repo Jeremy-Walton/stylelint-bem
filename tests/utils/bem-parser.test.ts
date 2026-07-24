@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatClassName, isKebabCase, parseClassName } from '@src/utils/bem-parser.js';
+import { blockOf, formatClassName, isKebabCase, isModifierOf, parseClassName } from '@src/utils/bem-parser.js';
 
 const defaultOptions = { elementSeparator: '__', modifierSeparator: '--' };
 
@@ -171,5 +171,45 @@ describe('formatClassName', () => {
     const original = 'card__title--large';
     const parsed = parseClassName(original, defaultOptions);
     expect(formatClassName(parsed.block, parsed.segments, defaultOptions)).toBe(original);
+  });
+});
+
+describe('blockOf', () => {
+  it('returns the block of a bare block name unchanged', () => {
+    expect(blockOf('card', defaultOptions)).toBe('card');
+  });
+
+  it('returns the block of an element', () => {
+    expect(blockOf('card__title', defaultOptions)).toBe('card');
+  });
+
+  it('returns the block of an element modifier', () => {
+    expect(blockOf('card__title--large', defaultOptions)).toBe('card');
+  });
+
+  it('respects custom separators', () => {
+    expect(blockOf('card-title', { elementSeparator: '-', modifierSeparator: '~' })).toBe('card');
+  });
+});
+
+describe('isModifierOf', () => {
+  it('is true for a block modifier of its block', () => {
+    expect(isModifierOf('card--featured', 'card', defaultOptions)).toBe(true);
+  });
+
+  it('is true for an element modifier of its element', () => {
+    expect(isModifierOf('card__title--large', 'card__title', defaultOptions)).toBe(true);
+  });
+
+  it('is false when the parent name does not match', () => {
+    expect(isModifierOf('card__title--large', 'card', defaultOptions)).toBe(false);
+  });
+
+  it('is false when the class is an element, not a modifier', () => {
+    expect(isModifierOf('card__title', 'card', defaultOptions)).toBe(false);
+  });
+
+  it('is false for a bare block with no segments', () => {
+    expect(isModifierOf('card', 'card', defaultOptions)).toBe(false);
   });
 });

@@ -4,12 +4,22 @@ import parser from 'postcss-selector-parser';
 // - 'bare': the sole class leading the selector, e.g. `.block__el`
 // - 'ampersand': compounded with `&`, e.g. `&.block--mod`; siblings in `compoundClassNames`
 // - 'class-compound': a leading compound of 2+ classes, e.g. `.block.block--mod`; siblings in `compoundClassNames`
-// - 'chained': one combinator past a leading compound, e.g. `.block .block__el`; the root's own
-//   classes/ampersand are exposed via `chainRootClassNames`/`chainRootHasAmpersand`
+// - 'chained': one combinator past a leading compound, e.g. `.block .block__el`; the root compound
+//   it hangs off is described by `chainRoot`
 // - 'other': anything deeper or messier than the above
 // A tag/id/universal/pseudo-class riding along in a compound doesn't change any of this — the
 // class must still be present to match, so it's ignored throughout.
 type NestingShape = 'bare' | 'ampersand' | 'class-compound' | 'chained' | 'other';
+
+// What a 'chained' class hangs off — the leading root compound one hop back:
+// - 'ampersand': the root is (or resolves through) `&`, e.g. `&.block--mod .block__el` or a bare
+//   leading combinator `+ .block__el`; its own class names are irrelevant, so they aren't carried
+// - 'classless': the root carries only a tag/pseudo, e.g. `summary .block__el` — no BEM identity
+// - 'classes': the root is one or more literal classes, e.g. `.block .block__el`, listed in `names`
+type ChainRoot =
+  | { kind: 'ampersand' }
+  | { kind: 'classless' }
+  | { kind: 'classes'; names: string[] };
 
 interface ClassNode {
   name: string;
@@ -17,8 +27,7 @@ interface ClassNode {
   nestingShape: NestingShape;
   compoundClassNames?: string[];
   enclosingPseudos?: string[];
-  chainRootHasAmpersand?: boolean;
-  chainRootClassNames?: string[];
+  chainRoot?: ChainRoot;
 }
 
 // Pseudo-classes the class sits inside as an argument (e.g. ':has' for `&:has(.block--mod)`),
@@ -33,10 +42,22 @@ function getEnclosingPseudos(classNode: parser.ClassName): string[] {
   return pseudos;
 }
 
-type ShapeAnalysis = Pick<
-  ClassNode,
-  'nestingShape' | 'compoundClassNames' | 'chainRootHasAmpersand' | 'chainRootClassNames'
->;
+type ShapeAnalysis = Pick<ClassNode, 'nestingShape' | 'compoundClassNames' | 'chainRoot'>;
+
+// Classify the leading root compound a chained class hangs off. An `&` anywhere in the root (or a
+// leading bare combinator, which native nesting treats as an implicit `&`) makes it ampersand-rooted
+// regardless of any classes alongside; otherwise it's the literal classes, or classless if none.
+function classifyChainRoot(rootCompound: parser.Node[], hasLeadingImplicitAmpersand: boolean): ChainRoot {
+  if (hasLeadingImplicitAmpersand || rootCompound.some((node) => node.type === 'nesting')) {
+    return { kind: 'ampersand' };
+  }
+
+  const names = rootCompound
+    .filter((node): node is parser.ClassName => node.type === 'class')
+    .map((node) => node.value);
+
+  return names.length > 0 ? { kind: 'classes', names } : { kind: 'classless' };
+}
 
 function analyzeNestingShape(classNode: parser.ClassName): ShapeAnalysis {
   const container = classNode.parent;
@@ -79,8 +100,7 @@ function analyzeNestingShape(classNode: parser.ClassName): ShapeAnalysis {
     return {
       nestingShape: 'chained',
       ...(compoundClassNames ? { compoundClassNames } : {}),
-      chainRootHasAmpersand: true,
-      chainRootClassNames: [],
+      chainRoot: { kind: 'ampersand' },
     };
   }
 
@@ -98,11 +118,7 @@ function analyzeNestingShape(classNode: parser.ClassName): ShapeAnalysis {
   return {
     nestingShape: 'chained',
     ...(compoundClassNames ? { compoundClassNames } : {}),
-    chainRootHasAmpersand:
-      hasLeadingImplicitAmpersand || rootCompound.some((node) => node.type === 'nesting'),
-    chainRootClassNames: rootCompound
-      .filter((node): node is parser.ClassName => node.type === 'class')
-      .map((node) => node.value),
+    chainRoot: classifyChainRoot(rootCompound, hasLeadingImplicitAmpersand),
   };
 }
 
@@ -157,5 +173,5 @@ function getClassNames(selector: string): string[] {
   return getClassNodes(selector).map((classNode) => classNode.name);
 }
 
-export type { ClassNode, NestingShape };
+export type { ChainRoot, ClassNode, NestingShape };
 export { getClassNames, getClassNodes, getClassNodesBySelectorGroup };

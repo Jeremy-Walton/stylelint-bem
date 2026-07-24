@@ -1,7 +1,7 @@
 import stylelint from 'stylelint';
 import type { Root, Rule } from 'postcss';
 import parser from 'postcss-selector-parser';
-import { formatClassName, lastSegment, parentClassName, parseClassName } from '../../utils/bem-parser.js';
+import { blockOf, formatClassName, isModifierOf, lastSegment, parentClassName } from '../../utils/bem-parser.js';
 import type { BemSegment, BemSeparatorOptions, ParsedBemClassName } from '../../utils/bem-parser.js';
 import { bemBaseOptionsSchema, isString } from '../../utils/rule-options.js';
 import type { BemBaseOptions } from '../../utils/rule-options.js';
@@ -29,23 +29,16 @@ const messages = stylelint.utils.ruleMessages(ruleName, {
     `Expected modifier ".${className}" to be nested directly inside ".${targetName}" via native CSS nesting`,
 });
 
-// Well-defined even for non-BEM names — parseClassName treats the whole name as the block then.
-function blockOf(className: string, separatorOptions: BemSeparatorOptions): string {
-  return parseClassName(className, separatorOptions).block;
-}
-
 // A chain is nesting-equivalent when its root is `&` (real ancestor validated elsewhere),
 // classless (no BEM identity to conflict with, e.g. `summary .block__el`), or shares the class's
 // own block (e.g. `.block .block__el`, two elements of one block nested for DOM reasons). An
 // unrelated root (`.wrapper .card__title`) is none of these and falls through to false.
 function isLegitimateChain(classNode: ClassNode, ownBlock: string, separatorOptions: BemSeparatorOptions): boolean {
-  if (classNode.nestingShape !== 'chained') return false;
-  if (classNode.chainRootHasAmpersand) return true;
+  const root = classNode.chainRoot;
+  if (!root) return false;
+  if (root.kind !== 'classes') return true;
 
-  const rootClassNames = classNode.chainRootClassNames ?? [];
-  if (rootClassNames.length === 0) return true;
-
-  return rootClassNames.some((rootClassName) => blockOf(rootClassName, separatorOptions) === ownBlock);
+  return root.names.some((rootClassName) => blockOf(rootClassName, separatorOptions) === ownBlock);
 }
 
 // True when a rule's selector(s) carry no class at all (only tag/id/pseudo) — pure DOM structure,
@@ -92,16 +85,6 @@ function ruleDefinesClass(ruleNode: Rule, className: string, separatorOptions: B
   );
 }
 
-// True when className is itself a modifier of targetName, e.g. "block--mod" of "block", or
-// "block__el--mod" of "block__el".
-function isModifierOfTarget(className: string, targetName: string, separatorOptions: BemSeparatorOptions): boolean {
-  const parsed = parseClassName(className, separatorOptions);
-  const finalSegment = lastSegment(parsed);
-  if (!finalSegment || finalSegment.separator !== 'modifier') return false;
-
-  return parentClassName(parsed, separatorOptions) === targetName;
-}
-
 // A rule whose entire selector is `&` compounded with modifier(s) of targetName, e.g.
 // `&.block--mod` or `&.block--mod1.block--mod2` — stacking these is equivalent to writing every
 // modifier in one compound directly under targetName, so isDirectlyNestedUnderTarget can pass
@@ -116,7 +99,7 @@ function isPureAmpersandModifierCompoundOf(
     return (
       nodes.length > 0 &&
       nodes.every(
-        (node) => node.nestingShape === 'ampersand' && isModifierOfTarget(node.name, targetName, separatorOptions),
+        (node) => node.nestingShape === 'ampersand' && isModifierOf(node.name, targetName, separatorOptions),
       )
     );
   });
@@ -186,14 +169,22 @@ function isInsideNonSubjectPseudo(classNode: ClassNode): boolean {
   );
 }
 
-function checkModifierNesting(
-  ruleNode: Rule,
-  classNode: ClassNode,
-  parsed: ParsedBemClassName,
-  expectedParentName: string,
-  ancestorRules: Rule[],
-  context: RuleContext,
-): void {
+// Everything the orchestration layer needs for one BEM class under inspection — built once per
+// class in checkRequireNesting and threaded through the element/modifier checks.
+interface NestingCheck {
+  ruleNode: Rule;
+  classNode: ClassNode;
+  parsed: ParsedBemClassName;
+  finalSegment: BemSegment;
+  expectedParentName: string;
+  ancestorRules: Rule[];
+  context: RuleContext;
+  mode: RequireNestingMode;
+}
+
+function checkModifierNesting(check: NestingCheck): void {
+  const { ruleNode, classNode, parsed, expectedParentName, ancestorRules, context } = check;
+
   // Compounding a modifier directly with its target pairs the two in the selector itself —
   // equivalent to nesting &.block--mod inside it.
   if (isCompoundedWith(classNode, expectedParentName)) return;
@@ -225,92 +216,89 @@ function checkModifierNesting(
   }
 }
 
-function checkElementNesting(
-  ruleNode: Rule,
-  classNode: ClassNode,
-  parsed: ParsedBemClassName,
-  finalSegment: BemSegment,
-  expectedParentName: string,
-  ancestorRules: Rule[],
-  context: RuleContext,
-  mode: RequireNestingMode,
-): void {
-  // An element may be compounded with its own modifiers — the modifier check above covers those
-  // siblings; the element itself still needs block nesting.
+// An element's selector is a valid definition when it's bare, or `&` resolving to a classless
+// ancestor (tag-tolerant, no real element identity), or a class-compound / legitimate chain — in
+// those last two only when every compounded sibling is one of the element's own modifiers (the
+// modifier check covers those siblings; the element itself still needs nesting, checked separately).
+function isValidElementShape(check: NestingCheck): boolean {
+  const { ruleNode, classNode, parsed, context } = check;
+
   const isCompoundedWithOwnModifiers = (classNode.compoundClassNames ?? []).every((name) =>
-    isModifierOfTarget(name, classNode.name, context.separatorOptions),
+    isModifierOf(name, classNode.name, context.separatorOptions),
   );
 
-  // Same reasoning as isAmpersandOnClasslessAncestor: `&` resolving to a classless ancestor
-  // carries no real element identity, so this is tag-tolerant just like `td.block__el`.
   const isElementAmpersandOnClasslessAncestor =
     classNode.nestingShape === 'ampersand' &&
     isCompoundedWithOwnModifiers &&
     isAmpersandOnClasslessAncestor(ruleNode);
 
-  const isValidElementShape =
+  return (
     classNode.nestingShape === 'bare' ||
     isElementAmpersandOnClasslessAncestor ||
     ((classNode.nestingShape === 'class-compound' ||
       isLegitimateChain(classNode, parsed.block, context.separatorOptions)) &&
-      isCompoundedWithOwnModifiers);
+      isCompoundedWithOwnModifiers)
+  );
+}
 
-  if (!isValidElementShape) {
-    // `&.block__el` alone is shape-for-shape identical to a valid modifier compound
-    // (`&.block--mod`) — worth its own message since it's a common naming/shape mixup, rather
-    // than the generic "not its own full selector" message below.
-    const isSingleAmpersandCompound = classNode.nestingShape === 'ampersand' && !classNode.compoundClassNames;
+// Report the most specific message for an element whose shape isn't a valid definition: the
+// modifier-lookalike `&.block__el`, the compounded-but-not-a-full-selector case, or the generic
+// flat/misnested element (wording depends on mode).
+function reportInvalidElementShape(check: NestingCheck): void {
+  const { ruleNode, classNode, parsed, finalSegment, expectedParentName, context, mode } = check;
 
-    if (isSingleAmpersandCompound) {
-      const modifierSuggestion = formatClassName(
-        parsed.block,
-        [{ separator: 'modifier', name: finalSegment.name }],
-        context.separatorOptions,
-      );
-      reportBemViolation(
-        context,
-        ruleNode,
-        classNode,
-        messages.elementCompoundedLikeModifier,
-        classNode.name,
-        modifierSuggestion,
-      );
-    } else if (classNode.nestingShape === 'ampersand' || classNode.nestingShape === 'class-compound') {
-      reportBemViolation(context, ruleNode, classNode, messages.elementNotFullSelector, classNode.name);
-    } else {
-      reportBemViolation(
-        context,
-        ruleNode,
-        classNode,
-        mode === 'weak' ? messages.elementNotNestedAnywhere : messages.elementNotNested,
-        classNode.name,
-        expectedParentName,
-      );
-    }
+  // `&.block__el` alone is shape-for-shape identical to a valid modifier compound
+  // (`&.block--mod`) — worth its own message since it's a common naming/shape mixup, rather
+  // than the generic "not its own full selector" message below.
+  const isSingleAmpersandCompound = classNode.nestingShape === 'ampersand' && !classNode.compoundClassNames;
+
+  if (isSingleAmpersandCompound) {
+    const modifierSuggestion = formatClassName(
+      parsed.block,
+      [{ separator: 'modifier', name: finalSegment.name }],
+      context.separatorOptions,
+    );
+    reportBemViolation(
+      context,
+      ruleNode,
+      classNode,
+      messages.elementCompoundedLikeModifier,
+      classNode.name,
+      modifierSuggestion,
+    );
+  } else if (classNode.nestingShape === 'ampersand' || classNode.nestingShape === 'class-compound') {
+    reportBemViolation(context, ruleNode, classNode, messages.elementNotFullSelector, classNode.name);
+  } else {
+    reportBemViolation(
+      context,
+      ruleNode,
+      classNode,
+      mode === 'weak' ? messages.elementNotNestedAnywhere : messages.elementNotNested,
+      classNode.name,
+      expectedParentName,
+    );
+  }
+}
+
+function checkElementNesting(check: NestingCheck): void {
+  const { ruleNode, classNode, expectedParentName, ancestorRules, context, mode } = check;
+
+  if (!isValidElementShape(check)) {
+    reportInvalidElementShape(check);
     return;
   }
 
-  // A chain rooted in the element's own block is self-sufficient — equivalent to real nesting
-  // even with zero ancestors. An ampersand root still needs a real ancestor (`&` has no meaning
-  // without one); a classless root proves nothing about the element's block, so it still needs
-  // the ancestor search below.
-  const isSelfContainedChain =
-    classNode.nestingShape === 'chained' &&
-    !classNode.chainRootHasAmpersand &&
-    (classNode.chainRootClassNames?.length ?? 0) > 0;
+  // A chain rooted in literal classes (already validated upstream to share the element's block) is
+  // self-sufficient — equivalent to real nesting even with zero ancestors. An ampersand root still
+  // needs a real ancestor (`&` has no meaning without one); a classless root proves nothing about
+  // the element's block — both still need the ancestor search below.
+  const isSelfContainedChain = classNode.chainRoot?.kind === 'classes';
 
   // Strict requires nesting inside the element's own block; weak accepts nesting under any
   // component's rule (deliberate scoping) but never a flat element.
   if (mode === 'weak') {
     if (ancestorRules.length === 0 && !isSelfContainedChain) {
-      reportBemViolation(
-        context,
-        ruleNode,
-        classNode,
-        messages.elementNotNestedAnywhere,
-        classNode.name,
-        expectedParentName,
-      );
+      reportBemViolation(context, ruleNode, classNode, messages.elementNotNestedAnywhere, classNode.name, expectedParentName);
     }
     return;
   }
@@ -328,14 +316,22 @@ function checkRequireNesting(root: Root, context: RuleContext, mode: RequireNest
   forEachBemClass(root, context, (ruleNode, classNode, parsed) => {
     if (isInsideNonSubjectPseudo(classNode)) return;
 
-    const ancestorRules = findAncestorRules(ruleNode);
     const finalSegment = lastSegment(parsed)!;
-    const expectedParentName = parentClassName(parsed, context.separatorOptions);
+    const check: NestingCheck = {
+      ruleNode,
+      classNode,
+      parsed,
+      finalSegment,
+      expectedParentName: parentClassName(parsed, context.separatorOptions),
+      ancestorRules: findAncestorRules(ruleNode),
+      context,
+      mode,
+    };
 
     if (finalSegment.separator === 'modifier') {
-      checkModifierNesting(ruleNode, classNode, parsed, expectedParentName, ancestorRules, context);
+      checkModifierNesting(check);
     } else {
-      checkElementNesting(ruleNode, classNode, parsed, finalSegment, expectedParentName, ancestorRules, context, mode);
+      checkElementNesting(check);
     }
   });
 }

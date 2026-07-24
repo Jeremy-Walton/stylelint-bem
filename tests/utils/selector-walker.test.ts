@@ -99,8 +99,7 @@ describe('getClassNodes', () => {
         name: 'card__title',
         sourceIndex: 22,
         nestingShape: 'chained',
-        chainRootHasAmpersand: false,
-        chainRootClassNames: ['card--featured'],
+        chainRoot: { kind: 'classes', names: ['card--featured'] },
       },
     ]);
   });
@@ -143,16 +142,14 @@ describe('getClassNodes', () => {
         sourceIndex: 9,
         nestingShape: 'chained',
         compoundClassNames: ['card--featured'],
-        chainRootHasAmpersand: false,
-        chainRootClassNames: ['wrapper'],
+        chainRoot: { kind: 'classes', names: ['wrapper'] },
       },
       {
         name: 'card--featured',
         sourceIndex: 14,
         nestingShape: 'chained',
         compoundClassNames: ['card'],
-        chainRootHasAmpersand: false,
-        chainRootClassNames: ['wrapper'],
+        chainRoot: { kind: 'classes', names: ['wrapper'] },
       },
     ]);
   });
@@ -164,8 +161,7 @@ describe('getClassNodes', () => {
         name: 'card__title',
         sourceIndex: 8,
         nestingShape: 'chained',
-        chainRootHasAmpersand: false,
-        chainRootClassNames: ['card'],
+        chainRoot: { kind: 'classes', names: ['card'] },
       },
     ]);
   });
@@ -202,8 +198,7 @@ describe('getClassNodes', () => {
         name: 'card__title',
         sourceIndex: 9,
         nestingShape: 'chained',
-        chainRootHasAmpersand: false,
-        chainRootClassNames: ['wrapper'],
+        chainRoot: { kind: 'classes', names: ['wrapper'] },
       },
     ]);
   });
@@ -233,8 +228,7 @@ describe('getClassNodes', () => {
         name: 'card__title',
         sourceIndex: 17,
         nestingShape: 'chained',
-        chainRootHasAmpersand: true,
-        chainRootClassNames: ['card--featured'],
+        chainRoot: { kind: 'ampersand' },
       },
     ]);
   });
@@ -245,8 +239,7 @@ describe('getClassNodes', () => {
         name: 'card__title',
         sourceIndex: 2,
         nestingShape: 'chained',
-        chainRootHasAmpersand: true,
-        chainRootClassNames: [],
+        chainRoot: { kind: 'ampersand' },
       },
     ]);
   });
@@ -259,16 +252,14 @@ describe('getClassNodes', () => {
         sourceIndex: 17,
         nestingShape: 'chained',
         compoundClassNames: ['card__title--large'],
-        chainRootHasAmpersand: true,
-        chainRootClassNames: ['card--featured'],
+        chainRoot: { kind: 'ampersand' },
       },
       {
         name: 'card__title--large',
         sourceIndex: 29,
         nestingShape: 'chained',
         compoundClassNames: ['card__title'],
-        chainRootHasAmpersand: true,
-        chainRootClassNames: ['card--featured'],
+        chainRoot: { kind: 'ampersand' },
       },
     ]);
   });
@@ -286,8 +277,7 @@ describe('getClassNodes', () => {
         name: 'card__title',
         sourceIndex: 21,
         nestingShape: 'chained',
-        chainRootHasAmpersand: false,
-        chainRootClassNames: ['card', 'card--featured'],
+        chainRoot: { kind: 'classes', names: ['card', 'card--featured'] },
       },
     ]);
   });
@@ -299,8 +289,7 @@ describe('getClassNodes', () => {
         name: 'wrapper',
         sourceIndex: 17,
         nestingShape: 'chained',
-        chainRootHasAmpersand: true,
-        chainRootClassNames: ['card--featured'],
+        chainRoot: { kind: 'ampersand' },
       },
       { name: 'card__title', sourceIndex: 26, nestingShape: 'other' },
     ]);
@@ -313,8 +302,7 @@ describe('getClassNodes', () => {
         name: 'survey-form__questions',
         sourceIndex: 13,
         nestingShape: 'chained',
-        chainRootHasAmpersand: false,
-        chainRootClassNames: ['survey-form'],
+        chainRoot: { kind: 'classes', names: ['survey-form'] },
       },
     ]);
   });
@@ -326,8 +314,7 @@ describe('getClassNodes', () => {
         name: 'stepper__item-marker',
         sourceIndex: 27,
         nestingShape: 'chained',
-        chainRootHasAmpersand: false,
-        chainRootClassNames: ['stepper__item'],
+        chainRoot: { kind: 'classes', names: ['stepper__item'] },
       },
     ]);
   });
@@ -340,8 +327,7 @@ describe('getClassNodes', () => {
         name: 'stepper__item-marker',
         sourceIndex: 38,
         nestingShape: 'chained',
-        chainRootHasAmpersand: false,
-        chainRootClassNames: ['stepper__item'],
+        chainRoot: { kind: 'classes', names: ['stepper__item'] },
       },
     ]);
   });
@@ -352,8 +338,7 @@ describe('getClassNodes', () => {
         name: 'block__label',
         sourceIndex: 2,
         nestingShape: 'chained',
-        chainRootHasAmpersand: true,
-        chainRootClassNames: [],
+        chainRoot: { kind: 'ampersand' },
       },
     ]);
   });
@@ -364,8 +349,7 @@ describe('getClassNodes', () => {
         name: 'block__element',
         sourceIndex: 8,
         nestingShape: 'chained',
-        chainRootHasAmpersand: false,
-        chainRootClassNames: [],
+        chainRoot: { kind: 'classless' },
       },
     ]);
   });
@@ -376,8 +360,7 @@ describe('getClassNodes', () => {
         name: 'block__element',
         sourceIndex: 10,
         nestingShape: 'chained',
-        chainRootHasAmpersand: true,
-        chainRootClassNames: [],
+        chainRoot: { kind: 'ampersand' },
       },
     ]);
   });
