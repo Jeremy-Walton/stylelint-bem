@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented here. Versioning follows [Semantic Versioning](https://semver.org/).
 
+## 0.2.0 - 2026-08-23
+
+### Changed
+
+- **Breaking:** the recommended shareable config no longer enables `stylelint-bem/require-nesting`. It
+  enforces a structural convention rather than BEM validity, so it is now opt-in ([#3](https://github.com/Jeremy-Walton/stylelint-bem/issues/3)). The plugin is still
+  registered by the preset, so extenders can turn the rule back on with a single `rules` entry:
+
+  ```json
+  {
+    "extends": ["@jeremywalton/stylelint-bem/config/recommended"],
+    "rules": { "stylelint-bem/require-nesting": true }
+  }
+  ```
+
+- README gained an "Enabling `require-nesting`" section covering what the rule enforces, why it is
+  opt-in, and when it is worth turning on.
+
 ## 0.1.0 - 2026-07-24
 
 Initial release. A stylelint plugin that validates BEM methodology in CSS.

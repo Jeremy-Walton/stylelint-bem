@@ -20,4 +20,4 @@ The full check list and semantics live in `CHECKS.md`. More checks may follow.
 
 ## Who it's for
 
-Teams and individuals using BEM for component CSS who want the convention enforced by tooling rather than memory and code review. It plugs into an existing stylelint setup — each rule can be enabled individually, or a recommended preset turns on everything with sane defaults.
+Teams and individuals using BEM for component CSS who want the convention enforced by tooling rather than memory and code review. It plugs into an existing stylelint setup — each rule can be enabled individually, or a recommended preset turns on the BEM-correctness checks with sane defaults, leaving the structural `require-nesting` check to teams who want it.

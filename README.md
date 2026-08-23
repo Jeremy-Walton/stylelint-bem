@@ -31,8 +31,9 @@ The fastest way to turn everything on with sensible defaults is to extend the re
 }
 ```
 
-This registers the plugin and enables all five rules with their defaults — no separate `plugins` entry
-needed. See [Presets](#presets) below.
+This registers the plugin and enables the four BEM-correctness rules with their defaults — no separate
+`plugins` entry needed. The fifth rule, `stylelint-bem/require-nesting`, is opt-in; see
+[Enabling `require-nesting`](#enabling-require-nesting) and [Presets](#presets) below.
 
 ### Manual setup
 
@@ -70,6 +71,39 @@ You can also start from the recommended config and layer overrides on top by ext
 re-declaring the rules you want to change under `rules` — `extends` and `rules` compose normally in
 stylelint, with `rules` taking precedence.
 
+### Enabling `require-nesting`
+
+The recommended config leaves this rule off, because it's the only one that judges how a file is
+organised rather than whether the CSS is valid BEM. Add it yourself to turn it on:
+
+```json
+{
+  "extends": ["@jeremywalton/stylelint-bem/config/recommended"],
+  "rules": {
+    "stylelint-bem/require-nesting": true
+  }
+}
+```
+
+It requires elements to be nested and modifiers to be compounded with what they modify:
+
+```css
+/* valid */
+.card {
+  .card__title { }
+  &.card--featured { }
+}
+
+/* flagged — valid BEM, but written flat */
+.card { }
+.card__title { }
+.card--featured { }
+```
+
+The nested class is written out in full `.card__title`. SCSS-style `&__title` form is currently not supported.
+Enable this rule if you want to enforce nesting and using full selectors `.card .card__title` or `.card.card--modifier`.Leave it off if you write flat BEM or use SCSS-style `&__title` form which is currently not supported
+by this rule.
+
 ## Options
 
 Secondary options shared by all five rules:
@@ -95,5 +129,7 @@ Only class names that participate in BEM are checked: those using the configured
 
 ## Presets
 
-- **recommended** (`@jeremywalton/stylelint-bem/config/recommended`) — enables all five rules with their defaults. See
-  [Quick start](#quick-start-the-recommended-config) above for how to extend it.
+- **recommended** (`@jeremywalton/stylelint-bem/config/recommended`) — enables the four BEM-correctness
+  rules (`valid-name`, `no-orphaned-element`, `no-orphaned-modifier`, `no-double-nested-element`) with
+  their defaults. `require-nesting` is left off; see [Enabling `require-nesting`](#enabling-require-nesting).
+  See [Quick start](#quick-start) above for how to extend it.
