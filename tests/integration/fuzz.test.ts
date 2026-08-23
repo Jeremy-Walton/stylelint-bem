@@ -1,11 +1,28 @@
 import stylelint from 'stylelint';
+import type { Config } from 'stylelint';
 import { describe, expect, it } from 'vitest';
-import recommended from '@src/configs/recommended.js';
+import plugins from '@src/index.js';
+import { ruleName as validNameRule } from '@src/rules/valid-name/index.js';
+import { ruleName as noOrphanedElementRule } from '@src/rules/no-orphaned-element/index.js';
+import { ruleName as noOrphanedModifierRule } from '@src/rules/no-orphaned-modifier/index.js';
+import { ruleName as noDoubleNestedElementRule } from '@src/rules/no-double-nested-element/index.js';
+import { ruleName as requireNestingRule } from '@src/rules/require-nesting/index.js';
+
+const everyRule: Config = {
+  plugins,
+  rules: {
+    [validNameRule]: true,
+    [noOrphanedElementRule]: true,
+    [noOrphanedModifierRule]: true,
+    [noDoubleNestedElementRule]: true,
+    [requireNestingRule]: true,
+  },
+};
 
 async function lint(code: string) {
   const result = await stylelint.lint({
     code,
-    config: recommended,
+    config: everyRule,
   });
 
   return result.results[0]!.warnings;

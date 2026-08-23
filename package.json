@@ -1,6 +1,6 @@
 {
   "name": "@jeremywalton/stylelint-bem",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A stylelint plugin that validates BEM methodology in CSS.",
   "type": "module",
   "author": "Jeremy Walton",
